@@ -1,0 +1,123 @@
+---
+title: 'Identifying Opioid Overdose Risk in Mesa, USA Using Spatial Regression and Clustering'
+subtitle: "Spatial Analysis and Geocompution at UCL"
+author: "Ayina Anyachebelu, Yik Kien Tse, Humza Hussain, Yiru Xu, and Girish Joijode"
+output:
+  html_document:
+    toc: true 
+    toc_float:
+      collapsed: false
+    toc_depth: 4
+    theme: cosmo
+    highlight: tango
+    code_folding: "hide"
+    fig_caption: true
+---
+
+```{r setup, echo=FALSE, results='hide', message=FALSE, warning=FALSE}
+library(knitr)
+library(tidyverse)
+library(dplyr)
+library(sf)
+library(sp)
+library(tidycensus)
+library(RSocrata)
+library(spdep)
+library(spatstat)
+library(RColorBrewer)
+library(viridis)
+library(classInt)
+library(reshape2)
+library(FNN)
+library(tm)
+library(raster)
+library(geojsonsf)
+
+options(scipen=999)
+```
+
+# **Introduction**
+
+## Context
+
+Here we will talk about the opioid issue in the US and in Messa and why this is information.
+
+## Research Objectives
+
+## Hypotheses
+
+# **Data**
+
+## City of Mesa Open Data
+
+Talk about source of data
+Talk about data wrangling e.g nearest neighbor for point data
+
+## United States Census Bureau
+
+Talk about the source of data, how many census block groups etc
+Talk about Data wrangling
+
+# **Data Exploration**
+
+## Descriptive Maps
+
+## Descriptive Statistics
+
+## Spatial Autocorrelation
+
+### Global Autocorrelation
+
+### Local Autocorrelation
+
+## Variables Pearson Correlation
+
+### Checking for Multicollinearity
+
+### Correlation with Overdoses
+
+# **Modelling**
+
+Based on our explanatory analysis, the variables chosen for the model are: 
+
+## OLS and Poisson Baseline Models
+
+## Spatial Poisson Models
+
+### Methodology
+
+### Results
+
+## Spatial Lagged Model
+
+### Methodology
+
+### Results
+
+## Spatial Error Model
+
+### Methodology
+
+### Results
+
+## Spatial Durbin Watson Model
+
+### Methodology
+
+### Results
+
+## GWR
+
+### Methodology
+
+### Results
+
+# **Discussion of Modelling Results**
+
+# **Clustering**
+
+### Methodology
+
+### Results
+
+# **Conclusion**

@@ -17,7 +17,6 @@ library(tm)
 library(raster)
 library(geojsonsf)
 
-states <- geojsonsf::geojson_sf("mesa_complete_data.geojson")
 
 #===========================================================================================#
 #                                   Read in Data 
