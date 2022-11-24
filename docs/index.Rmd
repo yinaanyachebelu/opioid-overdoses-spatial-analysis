@@ -30,8 +30,15 @@ library(classInt)
 library(reshape2)
 library(FNN)
 library(tm)
-library(raster)
 library(geojsonsf)
+library(stats)
+library(patchwork)
+library(ggthemes)
+library(gridExtra)
+library(tmap)
+library(stats)
+library(ggcorrplot)
+library(patchwork)
 
 options(scipen=999)
 ```
@@ -48,6 +55,231 @@ Here we will talk about the opioid issue in the US and in Messa and why this is 
 
 # **Data**
 
+```{r get_and_wrangle_data, echo=FALSE, results='hide', message=FALSE, warning=FALSE}
+
+maricopa_crs <- 'EPSG:2223'
+census_api_key("0f5f47c1f6197eb4d9a922410ed9dfb8af738b50", overwrite = TRUE) 
+
+#Boundary/outline of mesa
+
+mesa_boundary <- st_as_sf(st_read("../City_Boundary.csv"), wkt = 'Geometry', crs = 4326, agr = 'constant')%>%st_transform(maricopa_crs)
+
+#------------------------------------  Census Data  -----------------------------------------------#
+
+#Census Block group data: geometries + sociodemographic data
+
+variables_of_interest2 <- c("pop" = "B01003_001",
+                            "white_pop" = "B03002_003",
+                            "black_pop" = "B03002_004",
+                            "hispanic_pop" = "B03002_012",
+                            "median_income" = "B19013_001",
+                            "unemployed" = "B23025_005",
+                            "total_labor_force" = "B23025_003",
+                            "owner_occupied_homes" = "B25003_002",
+                            "renter_occupied_homes" = "B25003_003",
+                            "vacant_homes" = "B25002_003",
+                            "total_homes" = "B25003_001"
+)
+
+mesa_cb_groups <- get_acs(geography = "block group", variables = variables_of_interest2, 
+                          year=2020, survey = "acs5", state=04, county=013, geometry=TRUE) %>% st_transform(maricopa_crs)
+
+out_of_bounds <- c('040139413004', '040139413002', '040130101021', '040138169001', '040139413003', '1040133184002')
+
+mesa_cb_groups<- mesa_cb_groups[ ! mesa_cb_groups$GEOID %in% out_of_bounds, ]
+mesa_cb_groups <- mesa_cb_groups[mesa_boundary,]
+
+mesa_cb_table <- mesa_cb_groups %>%
+  dplyr::select( -NAME, -moe) %>% spread(variable, estimate) %>%
+  mutate(area = st_area(geometry),
+         perc_white = white_pop/pop*100,
+         perc_black = black_pop/pop*100,
+         perc_hispanic = hispanic_pop/pop*100,
+         perc_unemployed = unemployed/total_labor_force*100,
+         perc_owners = owner_occupied_homes/total_homes*100,
+         perc_renters = renter_occupied_homes/total_homes*100,
+         perc_vacant = vacant_homes/total_homes*100)
+
+mesa_cb_table <- na.omit(mesa_cb_table)
+
+#----------------------------------  Overdose Dataset  ------------------------------------------#
+
+
+overdoses <- st_as_sf(na.omit(read.socrata("https://data.mesaaz.gov/resource/qufy-tzv6.json")), 
+                      coords = c("longitude", "latitude"), crs = 4326, agr = "constant") %>% 
+  st_transform(st_crs(maricopa_crs))
+
+overdoses18_20 <- overdoses[overdoses$year == 2018 | overdoses$year == 2019 | overdoses$year == 2020, ]
+
+overdose_intersect <- overdoses18_20 %>% st_join(., mesa_cb_table, join=st_within) %>%
+  group_by(GEOID) %>% summarize(count = n()) %>% st_drop_geometry() 
+colnames(overdose_intersect)[2] <- "overdose_count"
+
+mesa_cb_table <- left_join(mesa_cb_table, overdose_intersect, by="GEOID")
+mesa_cb_table$overdose_count[is.na(mesa_cb_table$overdose_count)] <- 0
+
+#-------------------------------------  Zoning Dataset --------------------------------------------#
+
+zoning_parcels <- st_read("../Zoning Districts.geojson")%>%st_transform(st_crs(maricopa_crs))
+
+zones <- c("resid_high", "resid_low", "CBD", "commercial")
+
+zoning_parcels$zoning[str_detect(zoning_parcels$zoning, "^RM")] <- "resid_high"
+zoning_parcels$zoning[str_detect(zoning_parcels$zoning, "^RS")] <- "resid_low"
+zoning_parcels$zoning[str_detect(zoning_parcels$zoning, "^D")] <- "CBD"
+commercial_list <- c("GC","LC","NC","OC")
+zoning_parcels$zoning[zoning_parcels$zoning %in%commercial_list] <- "commercial"
+zoning_parcels <- zoning_parcels[zoning_parcels$zoning %in% zones, ]
+zoning_parcels <- zoning_parcels[c("zoning","geometry")]
+
+mesa_cb_sub <- subset(mesa_cb_table, select = c(GEOID, geometry, area))
+zoning_intersection <- st_intersection(mesa_cb_sub, st_make_valid(zoning_parcels))
+zoning_intersection$inter_area <- st_area(zoning_intersection$geometry)
+
+zoning_intersection <- aggregate(zoning_intersection$inter_area, 
+                                 by=list(zoning_intersection$GEOID,zoning_intersection$zoning), FUN=sum)
+
+zoning_intersection<-dcast(zoning_intersection, Group.1~Group.2)
+
+zoning_intersection[is.na(zoning_intersection)] <- 0
+colnames(zoning_intersection)[1] <- "GEOID"
+
+mesa_cb_table <- left_join(mesa_cb_table, zoning_intersection,by="GEOID")
+mesa_cb_table[is.na(mesa_cb_table)] <- 0
+
+mesa_cb_table <- mesa_cb_table %>% mutate(
+  cbd_per = as.numeric(CBD/area*100),
+  resid_high_per = as.numeric(resid_high/area*100),
+  resid_low_per = as.numeric(resid_low/area*100),
+  commercial_per = as.numeric(commercial/area*100))
+
+columns_to_keep <- c("GEOID", "pop", "area", "overdose_count", "median_income", "perc_white", "perc_black", "perc_hispanic", 
+                     "perc_unemployed", "perc_owners", "perc_renters", "perc_vacant",
+                     "cbd_per", "resid_high_per", "resid_low_per", "commercial_per", "geometry")
+
+mesa_cb_updated <- mesa_cb_table[columns_to_keep]
+
+
+#------------------------------  City Property + Graffiti Dataset ------------------------------------------#
+
+city_prop<- st_as_sf(na.omit(read.socrata("https://data.mesaaz.gov/resource/xms2-ya86.json")),
+                     coords = c("longitude", "latitude"), crs = 4326, agr = "constant")%>%st_transform(st_crs(maricopa_crs))
+
+city_prop <- city_prop %>% distinct(address, .keep_all = TRUE)
+
+# public safety + greenspace + vacant property + community dev + graffiti
+
+safety <- city_prop%>%filter(property_use %in% c("Public Safety--Fire/Police", "Park/Public Safety"))%>%
+  dplyr::select(property_use, geometry)
+safety$property_use <- "public_safety"
+
+green<- city_prop%>%filter(property_use %in% c("Parks", "Pocket Park", "Cemetery"))%>%
+  dplyr::select(property_use, geometry)
+green$property_use <- "public_reenspace"
+
+vacant_city<- city_prop%>%filter(property_use %in% c("Vacant", "Vacant (ADOT remnant)"))%>%
+  dplyr::select(property_use, geometry)
+vacant_city$property_use <- "vacant_property"
+
+community <- city_prop%>%filter(
+  property_use %in% c("Libraries", "Mesa Arts Center","Museums","Child Crisis Center", "Sequoia Charter School", "Senior Center"))%>%
+  dplyr::select(property_use, geometry)
+community$property_use <- "comm_development"
+
+
+graffiti_calls <- st_as_sf(na.omit(read.socrata("https://data.mesaaz.gov/resource/9spb-749m.json")),
+                           coords = c("lon", "lat"), crs = 4326, agr = "constant")%>%st_transform(st_crs(maricopa_crs))
+
+graffiti_calls$nearest_address <- removeNumbers(graffiti_calls$nearest_address)
+graffiti_calls$date_reported <- as.Date(graffiti_calls$date_reported)
+graffiti_calls$property_use <- "graffiti"
+
+graffiti_calls <- graffiti_calls %>% distinct(date_reported, nearest_address, .keep_all = TRUE) %>% 
+  filter(between(date_reported, as.Date('2018-01-01'), as.Date('2021-01-01'))) %>%
+  dplyr::select(property_use, geometry)
+
+
+mesa_cb_updated <- 
+  rbind(safety, green, vacant_city, community, graffiti_calls) %>%
+  st_join(., mesa_cb_updated, join=st_within) %>%
+  st_drop_geometry() %>%
+  group_by(GEOID,property_use) %>%
+  summarize(count = n()) %>%
+  full_join(mesa_cb_updated) %>%
+  spread(property_use, count, fill=0) %>%
+  st_sf() %>%
+  dplyr::select(-`<NA>`) %>%
+  na.omit() %>%
+  ungroup()
+
+
+### nearest neighbor function from Public Policy Analytics Textbook
+
+nn_function <- function(measureFrom,measureTo,k) {
+  measureFrom_Matrix <-
+    as.matrix(measureFrom)
+  measureTo_Matrix <-
+    as.matrix(measureTo)
+  nn <-   
+    get.knnx(measureTo, measureFrom, k)$nn.dist
+  output <-
+    as.data.frame(nn) %>%
+    rownames_to_column(var = "thisPoint") %>%
+    gather(points, point_distance, V1:ncol(.)) %>%
+    arrange(as.numeric(thisPoint)) %>%
+    group_by(thisPoint) %>%
+    summarize(pointDistance = mean(point_distance)) %>%
+    arrange(as.numeric(thisPoint)) %>% 
+    dplyr::select(-thisPoint) %>%
+    pull()
+  return(output) 
+}
+
+### finding distance (nearest neighbors) to point data
+
+st_c <- st_coordinates
+st_coid <- st_centroid
+
+mesa_cb_updated <-
+  mesa_cb_updated %>%
+  mutate(
+    dist_public_safety =
+      nn_function(st_c(st_coid(mesa_cb_updated)), st_c(safety),3),
+    dist_greenspace =
+      nn_function(st_c(st_coid(mesa_cb_updated)), st_c(green),3),
+    dist_vacant_prop =
+      nn_function(st_c(st_coid(mesa_cb_updated)), st_c(vacant_city),3),
+    dist_comm_dev =
+      nn_function(st_c(st_coid(mesa_cb_updated)), st_c(community),3),
+    dist_graffiti =
+      nn_function(st_c(st_coid(mesa_cb_updated)), st_c(graffiti_calls),3))
+
+
+#----------------------------------  Police Incidents Dataset ---------------------------------------#
+
+
+incidents <- st_as_sf(na.omit(read.socrata("https://data.mesaaz.gov/resource/39rt-2rfj.json")),
+                      coords = c("longitude", "latitude"), crs = 4326, agr = "constant")%>%
+  st_transform(st_crs(maricopa_crs))%>%
+  filter(report_year == '2018' | report_year == '2019' | report_year == '2020')
+incidents <- incidents[mesa_boundary,]
+
+notapp <- c("DEATH", "DUI", "FOUND", "COLLISION", "INSURANCE", "LICENSE", "LOST", "PARKING", "MEDICAL", 
+            "SUSPENSION", "DOG", "ANIMAL", "SPEED", "IGNITION", "REGISTRATION", "FAIL", "MENTALLY")
+incidents <- incidents[ ! grepl(paste(notapp, collapse = "|"), incidents$crime_type), ]
+incidents <- incidents[c("crime_id","geometry")]
+
+incidents_intersect <- incidents %>% st_join(., mesa_cb_updated, join=st_within) %>%
+  group_by(GEOID) %>% summarize(count = n()) %>% st_drop_geometry() 
+colnames(incidents_intersect)[2] <- "arrests_count"
+
+mesa_cb_final <- left_join(mesa_cb_updated, incidents_intersect, by="GEOID")
+mesa_cb_final$arrests_count[is.na(mesa_cb_final$arrests_count)] <- 0
+
+st_write(mesa_cb_final, "../mesa_complete_data3.geojson", append=FALSE)
+
+```
+
 ## City of Mesa Open Data
 
 Talk about source of data
@@ -60,21 +292,239 @@ Talk about Data wrangling
 
 # **Data Exploration**
 
-## Descriptive Maps
+```{r data.exploration1, echo=FALSE, results='hide', message=FALSE, warning=FALSE}
+maricopa_crs <- 'EPSG:2223'
+mesa_dataset<- st_read("../mesa_complete_data2.geojson")%>%st_transform(st_crs(maricopa_crs))
 
-## Descriptive Statistics
+all_cols <- c("GEOID", "overdose_count", "pop", "arrests_count", "median_income",
+               "perc_white", "perc_black", "perc_hispanic", 
+               "perc_unemployed", "perc_owners", "perc_renters", "perc_vacant",
+               "resid_high_per", "resid_low_per", "commercial_per",
+               "dist_public_safety", "dist_greenspace", "dist_vacant_prop", "dist_comm_dev", "dist_graffiti",
+              "geometry")
 
-## Spatial Autocorrelation
+ind_vars <- c("pop", "arrests_count", "median_income",
+               "perc_white", "perc_black", "perc_hispanic", 
+               "perc_unemployed", "perc_owners", "perc_renters", "perc_vacant",
+               "resid_high_per", "resid_low_per", "commercial_per",
+               "dist_public_safety", "dist_greenspace", "dist_vacant_prop", "dist_comm_dev", "dist_graffiti")
+```
+
+## Overdoses
+
+### Overdose Distribution
+
+Here we talk about the overdose dataset and distribution. 
+
+```{r expl_ov_hist, echo=FALSE, message=FALSE, warning=FALSE}
+#histogram of overdoses
+ov_hist <- ggplot(data=mesa_dataset, aes(overdose_count)) + 
+  geom_histogram()+ ggtitle("Frequency Distribution of Overdoses") + 
+  labs(y = "Count of Census Block Groups", x = "Number of overdoses")+
+  theme_minimal()
+
+ov_hist
+```
+
+Here we talk about the spatial distribution and how we forsee there will be autocorrelation. 
+
+```{r expl_ov_dist, echo=FALSE, message=FALSE, warning=FALSE}
+
+mesa_cb_chor <- mutate(mesa_dataset, overdose_cat = cut(overdose_count, breaks = c(-.000001, 1, 3, 6, 10, 14, 45))) 
+
+pal <- brewer.pal(6, "OrRd")
+plot(mesa_cb_chor[, "overdose_count"],
+     breaks = c(-.000001, 1, 3, 6, 10, 14, 45),
+     pal = pal,
+     main = "Overdoses in Mesa (2018-2020) by Census Block Group")
+
+```
 
 ### Global Autocorrelation
 
+We check for global spatial autocorrelation
+
+```{r global_auto, echo=FALSE, message=FALSE, warning=FALSE}
+
+mesa_nb <- poly2nb(mesa_dataset, queen=TRUE)
+
+mesa_weights <- nb2listw(mesa_nb, style="W", zero.policy=TRUE)
+
+
+#global autocorrelation results
+moran.test(mesa_dataset$overdose_count, mesa_weights)
+
+```
+
 ### Local Autocorrelation
 
-## Variables Pearson Correlation
+Here we will look at local autocorrelation.
+Talk about Moran's I and scatterplot. 
+
+```{r moran_scatter, echo=FALSE, message=FALSE, warning=FALSE}
+
+# Moran Scatterplot
+
+moran.plot(mesa_dataset$overdose_count, mesa_weights,
+           xlab="Overdose Counts", ylab="Spatailly lagged Overdose Counts")
+
+```
+
+Talk about Moran's I results here
+
+```{r local_auto, echo=FALSE, message=FALSE, warning=FALSE}
+
+# Morans Clusters
+moranCluster <- function(shape, W, var, alpha=0.05)
+{
+  # Code adapted from https://rpubs.com/Hailstone/346625
+  Ii <- localmoran(shape[[var]], W)
+  shape$Ii <- Ii[,"Ii"]
+  shape$Iip <- Ii[,"Pr(z != E(Ii))"]
+  shape$sig <- shape$Iip<alpha
+  # Scale the data to obtain low and high values
+  shape$scaled <- scale(shape[[var]]) # high low values at location i
+  shape$lag_scaled <- lag.listw(mesa_weights, shape$scaled) # high low values at neighbours j
+  shape$lag_cat <- factor(ifelse(shape$scaled>0 & shape$lag_scaled>0, "HH",
+                                 ifelse(shape$scaled>0 & shape$lag_scaled<0, "HL",
+                                        ifelse(shape$scaled<0 & shape$lag_scaled<0, "LL",
+                                               ifelse(shape$scaled<0 & shape$lag_scaled<0, "LH", "Equivalent")))))
+  shape$sig_cluster <- as.character(shape$lag_cat)
+  shape$sig_cluster[!shape$sig] <- "Non-sig"
+  shape$sig_cluster <- as.factor(shape$sig_cluster)
+  results <- data.frame(Ii=shape$Ii, pvalue=shape$Iip, type=shape$lag_cat, sig=shape$sig_cluster)
+  
+  return(list(results=results))
+}
+
+clusters <- moranCluster(mesa_dataset, W=mesa_weights, var="overdose_count")$results
+mesa_dataset$Ii_cluster <- clusters$sig
+
+tm_shape(mesa_dataset) + tm_polygons(col="Ii_cluster", palette = "Set3", title = "Clusters")
+
+```
+
+## Examining Independent Variables
+
+### Spatial Distributions
+
+```{r vars_maps, echo=FALSE, message=FALSE, warning=FALSE}
+
+ind_vars_table <- mesa_dataset[ind_vars]
+
+mapTheme<- function(base_size = 10, title_size = 14) {
+  theme(
+    text = element_text( color = "black"),
+    plot.title = element_text(size = title_size, colour = "black"),
+    plot.caption=element_text(hjust=0),
+    axis.ticks = element_blank(),
+    panel.background = element_blank(),axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    strip.text.x = element_text(size = 12),
+    legend.key = element_rect(fill=NA))
+}
+
+vars_net.long <-
+  gather(ind_vars_table, Variable, value, -geometry)
+
+mapTheme<- function(base_size = 10, title_size = 14) {
+  theme(
+    text = element_text( color = "black"),
+    plot.title = element_text(size = title_size, colour = "black"),
+    plot.caption=element_text(hjust=0),
+    axis.ticks = element_blank(),
+    panel.background = element_blank(),axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    strip.text.x = element_text(size = 12),
+    legend.key = element_rect(fill=NA))
+}
+
+vars <- unique(vars_net.long$Variable)
+mapList <- list()
+
+#map risk factors
+for(i in vars){
+  mapList[[i]] <- 
+    ggplot() +
+    geom_sf(data = filter(vars_net.long, Variable == i), aes(fill=value), colour=NA) +
+    scale_fill_viridis(option = "A", name="") +
+    labs(title=i) +
+    mapTheme() +
+    theme(plot.title = element_text(size=10))}
+do.call(grid.arrange,c(mapList, ncol = 3, top = "Spatial Distribution of Independent Variables"))
+
+
+
+```
+
+### Frequency Distributions
+
+Talk about frequency distributions of the variables. Do any need to be transformed. 
+
+```{r vars_hist, echo=FALSE, message=FALSE, warning=FALSE}
+
+mesa_nogeo <- mesa_dataset
+st_geometry(mesa_nogeo) <- NULL
+
+mesa_nogeo <- mesa_nogeo[ind_vars]
+
+data_long <- mesa_nogeo %>% pivot_longer(colnames(mesa_nogeo))%>%as.data.frame()
+
+ggplot(data_long, aes(x = value)) + geom_histogram() + theme_minimal() + facet_wrap(~ name, scales = "free")
+
+```
+
+### Variables Pearson Correlation
 
 ### Checking for Multicollinearity
 
+Talk about checking for multicollinearity 
+
+```{r vars_multicol, echo=FALSE, message=FALSE, warning=FALSE}
+
+cormat <- round(cor(mesa_nogeo),2)
+ggcorrplot(cormat)
+```
+
 ### Correlation with Overdoses
+
+Talk about looking at relationship between values. Values That don't have a 
+
+```{r corr_ov, echo=FALSE, message=FALSE, warning=FALSE}
+
+vars_plus <- append(ind_vars,"overdose_count")
+
+mesa_corr <- mesa_dataset
+st_geometry(mesa_corr) <- NULL
+mesa_corr <- mesa_corr[vars_plus]
+
+mesa_corr <- mesa_corr %>% gather(Variable, Value, -overdose_count) %>%
+  mutate(Value = as.numeric(Value))
+
+correlation.cor <-
+  mesa_corr %>%
+    group_by(Variable) %>%
+    summarize(correlation = cor(Value, overdose_count, use = "complete.obs"))
+    
+ggplot(mesa_corr, aes(Value, overdose_count)) +
+  geom_point(size = 1) +
+  geom_text(data = correlation.cor, aes(label = paste("r =", round(correlation, 2))),
+            x=-Inf, y=Inf, vjust = 1.5, hjust = -.1) +
+  geom_smooth(method = "lm", se = FALSE, colour = "black") +
+  facet_wrap(~Variable, ncol = 5, scales = "free") +
+  labs(title = "Correlations between Number of Overdoses and Risk Variables") + 
+  theme(strip.text.x = element_text(size = 10))
+
+
+```
 
 # **Modelling**
 
