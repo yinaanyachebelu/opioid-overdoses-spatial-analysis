@@ -14,7 +14,7 @@ output:
     fig_caption: true
 ---
 
-```{r setup, echo=FALSE, results='hide', message=FALSE, warning=FALSE, include=TRUE}
+```{r setup, results='hide', message=FALSE, warning=FALSE, include=TRUE}
 
 knitr::opts_chunk$set(echo = TRUE)
 library(knitr)
@@ -58,7 +58,7 @@ Here we will talk about the opioid issue in the US and in Messa and why this is 
 
 # **Data**
 
-```{r get_and_wrangle_data, echo=FALSE, results='hide', message=FALSE, warning=FALSE}
+```{r get_and_wrangle_data, results='hide', message=FALSE, warning=FALSE}
 
 maricopa_crs <- 'EPSG:2223'
 census_api_key("0f5f47c1f6197eb4d9a922410ed9dfb8af738b50", overwrite = TRUE) 
@@ -295,7 +295,7 @@ Talk about Data wrangling
 
 # **Data Exploration**
 
-```{r data.exploration1, echo=FALSE, results='hide', message=FALSE, warning=FALSE}
+```{r data.exploration1, results='hide', message=FALSE, warning=FALSE}
 maricopa_crs <- 'EPSG:2223'
 mesa_dataset<- st_read("../mesa_complete_data3.geojson")%>%st_transform(st_crs(maricopa_crs))
 
@@ -319,7 +319,7 @@ ind_vars <- c("pop", "arrests_count", "median_income",
 
 Here we talk about the overdose dataset and distribution. 
 
-```{r expl_ov_hist, echo=FALSE, message=FALSE, warning=FALSE}
+```{r expl_ov_hist, results='hide', message=FALSE, warning=FALSE}
 #histogram of overdoses
 ov_hist <- ggplot(data=mesa_dataset, aes(overdose_count)) + 
   geom_histogram()+ ggtitle("Frequency Distribution of Overdoses") + 
@@ -331,7 +331,7 @@ ov_hist
 
 Here we talk about the spatial distribution and how we forsee there will be autocorrelation. 
 
-```{r expl_ov_dist, echo=FALSE, message=FALSE, warning=FALSE}
+```{r expl_ov_dist, results='hide', message=FALSE, warning=FALSE}
 
 mesa_cb_chor <- mutate(mesa_dataset, overdose_cat = cut(overdose_count, breaks = c(-.000001, 1, 3, 6, 10, 14, 45))) 
 
@@ -349,7 +349,7 @@ plot(mesa_cb_chor[, "overdose_count"],
 
 We check for global spatial autocorrelation
 
-```{r global_auto, echo=FALSE, message=FALSE, warning=FALSE}
+```{r global_auto, results='hide', message=FALSE, warning=FALSE}
 
 mesa_nb <- poly2nb(mesa_dataset, queen=TRUE)
 
@@ -368,7 +368,7 @@ moran.test(mesa_dataset$overdose_count, mesa_weights)
 Here we will look at local autocorrelation.
 Talk about Moran's I and scatterplot. 
 
-```{r moran_scatter, echo=FALSE, message=FALSE, warning=FALSE}
+```{r moran_scatter, results='hide', message=FALSE, warning=FALSE}
 
 # Moran Scatterplot
 
@@ -379,7 +379,7 @@ moran.plot(mesa_dataset$overdose_count, mesa_weights,
 
 Talk about Moran's I results here
 
-```{r local_auto, echo=FALSE, message=FALSE, warning=FALSE}
+```{r local_auto, results='hide', message=FALSE, warning=FALSE}
 
 # Morans Clusters
 moranCluster <- function(shape, W, var, alpha=0.05)
@@ -417,14 +417,14 @@ tm_shape(mesa_dataset) + tm_polygons(col="Ii_cluster", palette = "Set3", title =
 
 ### Spatial Distributions
 
-```{r vars_maps, fig.height=7, fig.width=7, echo=FALSE, message=FALSE, warning=FALSE}
+```{r vars_maps, fig.height=7, fig.width=10, results='hide', message=FALSE, warning=FALSE}
 
 ind_vars_table <- mesa_dataset[ind_vars]
 
 vars_net.long <-
   gather(ind_vars_table, Variable, value, -geometry)
 
-mapTheme<- function(base_size = 20, title_size = 25) {
+mapTheme<- function(base_size = 15, title_size = 20) {
   theme(
     text = element_text( color = "black"),
     plot.title = element_text(size = title_size, colour = "black"),
@@ -436,7 +436,7 @@ mapTheme<- function(base_size = 20, title_size = 25) {
     axis.title.y = element_blank(),
     panel.grid.minor = element_blank(),
     panel.border = element_blank(),
-    strip.text.x = element_text(size = 20),
+    strip.text.x = element_text(size = 10),
     legend.key = element_rect(fill=NA))
 }
 
@@ -451,7 +451,7 @@ for(i in vars){
     scale_fill_viridis(option = "A", name="") +
     labs(title=i) +
     mapTheme() +
-    theme(plot.title = element_text(size=15))}
+    theme(plot.title = element_text(size=10))}
 do.call(grid.arrange,c(mapList, ncol = 5, top = "Spatial Distribution of Independent Variables"))
 
 ```
@@ -460,7 +460,7 @@ do.call(grid.arrange,c(mapList, ncol = 5, top = "Spatial Distribution of Indepen
 
 Talk about frequency distributions of the variables. Do any need to be transformed. 
 
-```{r vars_hist, echo=FALSE, message=FALSE, warning=FALSE}
+```{r vars_hist, results='hide', message=FALSE, warning=FALSE}
 
 mesa_nogeo <- mesa_dataset
 st_geometry(mesa_nogeo) <- NULL
@@ -477,7 +477,7 @@ ggplot(data_long, aes(x = value)) + geom_histogram() + theme_minimal() + facet_w
 
 Talk about checking for multicollinearity 
 
-```{r vars_multicol, echo=FALSE, message=FALSE, warning=FALSE}
+```{r vars_multicol, results='hide', message=FALSE, warning=FALSE}
 
 cormat <- round(cor(mesa_nogeo),2)
 ggcorrplot(cormat)
@@ -487,7 +487,7 @@ ggcorrplot(cormat)
 
 Talk about looking at relationship between values. Values That don't have a strong correlation
 
-```{r corr_ov, fig.height=6.5, fig.width=5.5, echo=FALSE, message=FALSE, warning=FALSE}
+```{r corr_ov, fig.height=6.5, fig.width=6.5, results='hide', message=FALSE, warning=FALSE}
 
 vars_plus <- append(ind_vars,"overdose_count")
 
