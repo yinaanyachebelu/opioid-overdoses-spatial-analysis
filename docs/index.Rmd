@@ -14,7 +14,9 @@ output:
     fig_caption: true
 ---
 
-```{r setup, echo=FALSE, results='hide', message=FALSE, warning=FALSE}
+```{r setup, echo=FALSE, results='hide', message=FALSE, warning=FALSE, include=TRUE}
+
+knitr::opts_chunk$set(echo = TRUE)
 library(knitr)
 library(tidyverse)
 library(dplyr)
@@ -39,6 +41,7 @@ library(tmap)
 library(stats)
 library(ggcorrplot)
 library(patchwork)
+library(grid)
 
 options(scipen=999)
 ```
@@ -64,7 +67,7 @@ census_api_key("0f5f47c1f6197eb4d9a922410ed9dfb8af738b50", overwrite = TRUE)
 
 mesa_boundary <- st_as_sf(st_read("../City_Boundary.csv"), wkt = 'Geometry', crs = 4326, agr = 'constant')%>%st_transform(maricopa_crs)
 
-#------------------------------------  Census Data  -----------------------------------------------#
+#------------------------------------  Census Data ----------------------------------------------#
 
 #Census Block group data: geometries + sociodemographic data
 
@@ -276,7 +279,7 @@ colnames(incidents_intersect)[2] <- "arrests_count"
 mesa_cb_final <- left_join(mesa_cb_updated, incidents_intersect, by="GEOID")
 mesa_cb_final$arrests_count[is.na(mesa_cb_final$arrests_count)] <- 0
 
-st_write(mesa_cb_final, "../mesa_complete_data3.geojson", append=FALSE)
+#st_write(mesa_cb_final, "../mesa_complete_data3.geojson", append=FALSE)
 
 ```
 
@@ -294,7 +297,7 @@ Talk about Data wrangling
 
 ```{r data.exploration1, echo=FALSE, results='hide', message=FALSE, warning=FALSE}
 maricopa_crs <- 'EPSG:2223'
-mesa_dataset<- st_read("../mesa_complete_data2.geojson")%>%st_transform(st_crs(maricopa_crs))
+mesa_dataset<- st_read("../mesa_complete_data3.geojson")%>%st_transform(st_crs(maricopa_crs))
 
 all_cols <- c("GEOID", "overdose_count", "pop", "arrests_count", "median_income",
                "perc_white", "perc_black", "perc_hispanic", 
@@ -340,6 +343,8 @@ plot(mesa_cb_chor[, "overdose_count"],
 
 ```
 
+
+
 ### Global Autocorrelation
 
 We check for global spatial autocorrelation
@@ -355,6 +360,8 @@ mesa_weights <- nb2listw(mesa_nb, style="W", zero.policy=TRUE)
 moran.test(mesa_dataset$overdose_count, mesa_weights)
 
 ```
+
+
 
 ### Local Autocorrelation
 
@@ -404,34 +411,20 @@ tm_shape(mesa_dataset) + tm_polygons(col="Ii_cluster", palette = "Set3", title =
 
 ```
 
+
 ## Examining Independent Variables
+
 
 ### Spatial Distributions
 
-```{r vars_maps, echo=FALSE, message=FALSE, warning=FALSE}
+```{r vars_maps, fig.height=7, fig.width=7, echo=FALSE, message=FALSE, warning=FALSE}
 
 ind_vars_table <- mesa_dataset[ind_vars]
-
-mapTheme<- function(base_size = 10, title_size = 14) {
-  theme(
-    text = element_text( color = "black"),
-    plot.title = element_text(size = title_size, colour = "black"),
-    plot.caption=element_text(hjust=0),
-    axis.ticks = element_blank(),
-    panel.background = element_blank(),axis.title = element_blank(),
-    axis.text = element_blank(),
-    axis.title.x = element_blank(),
-    axis.title.y = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.border = element_blank(),
-    strip.text.x = element_text(size = 12),
-    legend.key = element_rect(fill=NA))
-}
 
 vars_net.long <-
   gather(ind_vars_table, Variable, value, -geometry)
 
-mapTheme<- function(base_size = 10, title_size = 14) {
+mapTheme<- function(base_size = 20, title_size = 25) {
   theme(
     text = element_text( color = "black"),
     plot.title = element_text(size = title_size, colour = "black"),
@@ -443,7 +436,7 @@ mapTheme<- function(base_size = 10, title_size = 14) {
     axis.title.y = element_blank(),
     panel.grid.minor = element_blank(),
     panel.border = element_blank(),
-    strip.text.x = element_text(size = 12),
+    strip.text.x = element_text(size = 20),
     legend.key = element_rect(fill=NA))
 }
 
@@ -458,10 +451,8 @@ for(i in vars){
     scale_fill_viridis(option = "A", name="") +
     labs(title=i) +
     mapTheme() +
-    theme(plot.title = element_text(size=10))}
-do.call(grid.arrange,c(mapList, ncol = 3, top = "Spatial Distribution of Independent Variables"))
-
-
+    theme(plot.title = element_text(size=15))}
+do.call(grid.arrange,c(mapList, ncol = 5, top = "Spatial Distribution of Independent Variables"))
 
 ```
 
@@ -482,9 +473,7 @@ ggplot(data_long, aes(x = value)) + geom_histogram() + theme_minimal() + facet_w
 
 ```
 
-### Variables Pearson Correlation
-
-### Checking for Multicollinearity
+### Correlations Between Potential Risk Factors
 
 Talk about checking for multicollinearity 
 
@@ -494,11 +483,11 @@ cormat <- round(cor(mesa_nogeo),2)
 ggcorrplot(cormat)
 ```
 
-### Correlation with Overdoses
+### Correlations Between with Overdose Counts and Potential Risk Factors
 
-Talk about looking at relationship between values. Values That don't have a 
+Talk about looking at relationship between values. Values That don't have a strong correlation
 
-```{r corr_ov, echo=FALSE, message=FALSE, warning=FALSE}
+```{r corr_ov, fig.height=6.5, fig.width=5.5, echo=FALSE, message=FALSE, warning=FALSE}
 
 vars_plus <- append(ind_vars,"overdose_count")
 
@@ -518,7 +507,7 @@ ggplot(mesa_corr, aes(Value, overdose_count)) +
   geom_point(size = 1) +
   geom_text(data = correlation.cor, aes(label = paste("r =", round(correlation, 2))),
             x=-Inf, y=Inf, vjust = 1.5, hjust = -.1) +
-  geom_smooth(method = "lm", se = FALSE, colour = "black") +
+  geom_smooth(method = "lm", se = FALSE, colour = "black") + theme_minimal() +
   facet_wrap(~Variable, ncol = 5, scales = "free") +
   labs(title = "Correlations between Number of Overdoses and Risk Variables") + 
   theme(strip.text.x = element_text(size = 10))
