@@ -1,5 +1,5 @@
 ---
-title: 'Identifying Opioid Overdose Risk in Mesa, USA Using Spatial Regression and Clustering'
+title: 'Identifying Opioid Overdose Risk in Mesa, USA Using Spatial Regression'
 subtitle: "Spatial Analysis and Geocompution at UCL"
 author: "Ayina Anyachebelu, Yik Kien Tse, Humza Hussain, Yiru Xu, and Girish Joijode"
 output:
@@ -50,11 +50,20 @@ options(scipen=999)
 
 ## Context
 
-Here we will talk about the opioid issue in the US and in Messa and why this is information.
+The “Opioid epidemic” is a global health crisis (Krausz et al., 2021). The effectiveness of this drug class in pain treatment, modern anaesthesia and palliative care (Rosenblum et al., 2008, Rosner et al., 2019) is widely regarded in the medical world. Unfortunately, the substance is highly addictive (Waldhoer et al. 2004). Among the many side effects of opioid usage, such as digestive disorders, constipation and depression (Adams, 1889), the most notable is respiratory depression, which is the main cause of opioid overdose related deaths (Montandon and Slutsky, 2019). In the United States, there has been widespread over-prescription of opioids such as OxyContin since the 1990s (Lyden and Binswanger, 2019). This has led to increased dependency on synthetic opioids. Opioid overdose-related hospitalisations increased 64% between 2005 and 2014, and in 2016 over 42,000 Americans died from opioid overdoses (Lyden and Binswanger, 2019). Governments on the local and national levels of the country are actively pursuing solutions to mitigate the risks that this crisis poses to society.
 
-## Research Objectives
+There has been a great deal of research undertaken to understand the socio-economic and environmental factors exacerbating opioid overdoses and related deaths. Socio-economic marginalisation is an important contributor to opioid overdoses amongst the people using them (Draanen et al., 2020). Several studies have found opioid abuse to be more common amongst people recently released from prison (Brinkley-Rubinstein et al., 2018), those living in poverty (Marshall et al., 2019) and the unemployed (Hollingsworth et al., 2017), whereas higher measures of educational achievement (Marshall et al. 2019) and social support in the form of healthy relationships (Burns et al., 2004) have been found to be negatively associated with overdose cases. All of these factors point to the increasing need for policy to uplifting users of opioids with social and economic insecurity (Draanen et al., 2020) and using these associated risk factors to predict potential areas for future overdose prevalence.
 
-## Hypotheses
+While many of the mentioned studies focused on linear regression models and multivariate analysis to get to these conclusions, they often failed to take into consideration the spatial relationship that opioid overdoses have with these variables. Studies that have accounted for spatial variability have been able to highlight high levels of clustering facilitating the identification of areas which require immediate policy attention. For example, a study in Cincinnati, Ohio, not only found hotspots of heroin-related incidents via spatial clustering, but what variables were common amongst them (Choi et al., 2022). These hotspots were often found in areas with lower education rates, higher poverty rates and higher male percentages, consolidating some of the key findings in existing literature. A previous study in Cincinnati implemented spatial regression methods to factor in characteristics of the built environment as well as socio-economic variables, something that may have been more difficult to accomplish without the implementation of location data and spatial analysis (Li et al. 2019). While the proportion of parks, manufacturing districts and commercial sectors was positively associated with heroin-related emergency calls, there was a negative association seen with proximity to fast food restaurants, hospitals and opioid-treatment programs. Overall, advancements in spatial analytics have significantly progressed research in this field, with the aim to direct change in areas most needed and identify potential characteristics of areas that are most susceptible.
+
+Adding to the previous work in this field, we aim to spatially characterise the risk factors associated with overdoses in the City of Mesa, located in the state of Arizona. Mesa is an ideal study site as the Arizona Department of Health Services has stated that every day over 5 people die from opioid overdoses within the state (Opioid Prevention, 2022). The governor of Arizona himself, Doug Ducey, has stated clearly how Arizona, and the nation as a whole is facing a public health emergency which requires targeted solutions to alleviate pain (Office of Governor Ducey, 2017). The City of Mesa publishes publicly available data on overdose incidents, providing an opportunity to determine the key characteristics of overdose hotspots which will inform future policymaking. 
+
+
+## Research Objectives and Hypotheses
+
+The objective of our research is to improve the targeting of interventions against heroin overdoses in Mesa. We aim to identify how demographic, socioeconomic, and geographic factors are associated with overdose deaths in order to inform the City about where to take proactive measures to prevent more incidences. To achieve this, we model the relationship between various potential risk factors and the number of overdoses using spatial regression.
+
+We hypothesize that there will be higher overdose mortality in areas with greater minority and low-income populations. Our predictions are based on studies showing that heroin-related incidents were negatively correlated with median household income in Cincinnati (Li et al., 2019) and that incidents were growing most rapidly amongst Black and Latinx communities across US metropolitan areas (Lippold et al., 2019). We also predict that characteristics of the built environment such as distance from greenspace, zoning assignments, or indications of plight based on the aforementioned study (Li et al., 2019). Finally, we expect a lower number of incidents with regions of lower crime rates in accordance to results in similar work (Choi et al., 2022). 
 
 # **Data**
 
@@ -81,7 +90,7 @@ variables_of_interest2 <- c("pop" = "B01003_001",
                             "owner_occupied_homes" = "B25003_002",
                             "renter_occupied_homes" = "B25003_003",
                             "vacant_homes" = "B25002_003",
-                            "total_homes" = "B25003_001"
+                            "total_homes" = "B25002_001"
 )
 
 mesa_cb_groups <- get_acs(geography = "block group", variables = variables_of_interest2, 
@@ -102,6 +111,8 @@ mesa_cb_table <- mesa_cb_groups %>%
          perc_owners = owner_occupied_homes/total_homes*100,
          perc_renters = renter_occupied_homes/total_homes*100,
          perc_vacant = vacant_homes/total_homes*100)
+
+mesa_cb_table$perc_vacant[mesa_cb_table$perc_vacant >100] <- 100
 
 mesa_cb_table <- na.omit(mesa_cb_table)
 
@@ -279,25 +290,38 @@ colnames(incidents_intersect)[2] <- "arrests_count"
 mesa_cb_final <- left_join(mesa_cb_updated, incidents_intersect, by="GEOID")
 mesa_cb_final$arrests_count[is.na(mesa_cb_final$arrests_count)] <- 0
 
-#st_write(mesa_cb_final, "../mesa_complete_data3.geojson", append=FALSE)
+#st_write(mesa_cb_final, "../mesa_complete_data4.geojson", append=FALSE)
 
 ```
 
+## United States Census Bureau Data
+
+We obtained all our demographic and socioeconomic data from the [American Community Survey (ACS)](https://www.census.gov/programs-surveys/acs) which is an annual data collection program run by the United States Census Bureau. ACS is the premier source for detailed demographic and housing information in the United States. We obtained the most recent 5-year estimates (2020) on the census block group level which is the smallest geographical unit for which the Census Bureau provides data. There are 345 census block groups in Mesa with a substantial population. The information we collected includes the total population, the white, Black, and Hispanic population, the median household income, the total unemployed and the total labor force, the number of homeowners, the number of renters, the number of vacant properties, and the total number of properties. For all our main variables excluding income, we calculated the statistic as a proportion to account for varying population sizes across the census block groups. 
+
+
 ## City of Mesa Open Data
 
-Talk about source of data
-Talk about data wrangling e.g nearest neighbor for point data
+The majority of our data sets come from the The City of Mesa Data Portal maintained by the municipal government. Our primary dataset is the ["Fire and Medical Opioid Overdose Incidents"](https://data.mesaaz.gov/Fire-and-Medical/Fire-and-Medical-Opioid-Overdose-Incidents/qufy-tzv6), which contains all confirmed cases of opioid overdoses and their locations rounded to the 1/3 mile increments. The overdose was either confirmed by the patient or witness, an opioid found on scene, or a positive response to Narcan treatment (). We obtained the number of overdose incidents from 2018 to 2020 and aggregated them by census block group. 
 
-## United States Census Bureau
+We also collected the ["Zoning Districts"](https://data.mesaaz.gov/Zoning-Property/Zoning-Districts/qscf-6ebm) data from the portal. The dataset contains delineated geographic areas in the city and their land use assignments. We specifically extracted land parcels assigned as high-density residential, low-density residential, and commercial. Additionally, we utilized the ["City Owned Property"](https://data.mesaaz.gov/Engineering/City-Owned-Property/xms2-ya86) dataset which lists the properties owned or sold by the city and their locations. From this dataset we obtained point data on the location of parks and cemeteries (which we labelled as greenspace), libraries, arts centers, museums, crisis centers, and senior centers (which we labelled as community development resources), fire department and police stations (which we labelled as public safety), and municipal vacant property. 
 
-Talk about the source of data, how many census block groups etc
-Talk about Data wrangling
+To investigate the degree of plight in neighborhoods, we used the ["Transportation Graffiti"](https://data.mesaaz.gov/Transportation/Transportation-Graffiti/9spb-749m) dataset which includes graffiti reports in the city. We obtained reports from 2018 to 2020 and filtered them by the date and location in order to collect only distinct reports. 
+
+To establish a smoother relationship to factors of our point datasets across space, we calculated average nearest neighbor features. Adapting code from Ken Steif's Public Policy Analytics we calculated the distance from the centroid of each census block group to the 3 nearest factor points (Steif, 2021). 
+
+Finally, to investigate crime rates, we utilized the ["Police Incidents"](https://data.mesaaz.gov/Police/Police-Incidents/39rt-2rfj) dataset which includes incidents based on police reports and arrests and their locations rounded to the nearest hundred block. We excluded all non-crime-related incidents such as car collisions, medical emergencies, or animal-related issues. We also excluded crimes that were related to driving such as DUIs, or missing driver's license, or speeding, because of the uncertainty about if the location of the incident is associated with the individual charged. 
+
+
+## List of Potential Risk Factors
+
+After feature engineering, our list of potential independent variables include population, White population (as percent), Hispanic population (as percent), Black Population (as percent), median household income, unemployed population (as percent), homeowner population (as percent), renter population (as percent), vacant homes (as percent), land zoned as high-density residential (as percent), land zoned as low-density residential (as percent), land zoned as commercial (as percent), number of crime-related police incidents, average distance to the 3 nearest: graffiti reports, community development centers, greenspace, public safety, and vacant property. 
+
 
 # **Data Exploration**
 
 ```{r data.exploration1, results='hide', message=FALSE, warning=FALSE}
 maricopa_crs <- 'EPSG:2223'
-mesa_dataset<- st_read("../mesa_complete_data3.geojson")%>%st_transform(st_crs(maricopa_crs))
+mesa_dataset<- st_read("../mesa_complete_data4.geojson")%>%st_transform(st_crs(maricopa_crs))
 
 all_cols <- c("GEOID", "overdose_count", "pop", "arrests_count", "median_income",
                "perc_white", "perc_black", "perc_hispanic", 
@@ -317,7 +341,8 @@ ind_vars <- c("pop", "arrests_count", "median_income",
 
 ### Overdose Distribution
 
-Here we talk about the overdose dataset and distribution. 
+The chart below shows the frequency distribution of opioid overdose for Mesa census blocks. We find that the distribution of overdoses is heavily right-skewed. The mean and median of overdose cases are 5.1 and 3 respectively. However, a few census blocks have a relatively large number of overdose cases compared to others. It may represent that opioid overdose in Mesa may be more prevalent in several areas compared to most places where there are only a few cases. As a result, our modelling of the overdose counts will have to account for the prevalence of census block groups with no cases.
+
 
 ```{r expl_ov_hist, results='hide', message=FALSE, warning=FALSE}
 #histogram of overdoses
@@ -329,7 +354,7 @@ ov_hist <- ggplot(data=mesa_dataset, aes(overdose_count)) +
 ov_hist
 ```
 
-Here we talk about the spatial distribution and how we forsee there will be autocorrelation. 
+The following map reveals the spatial distribution of opioid overdose among Mesa census blocks from 2018 to 2020. By observation, the census blocks with a more significant number of overdose cases tend to cluster. For example, they tend to cluster in the west of Mesa and the centre part of Mesa. On the other hand, those with a relatively lower number of cases also show a general pattern of clustering towards the North region and the South part of Mesa. Therefore, it is worth studying if those with higher values tend to cluster statistically, and so do those with lower values. Global and Local Moran's I will be performed to test this hypothesis statistically.
 
 ```{r expl_ov_dist, results='hide', message=FALSE, warning=FALSE}
 
@@ -344,10 +369,9 @@ plot(mesa_cb_chor[, "overdose_count"],
 ```
 
 
-
 ### Global Autocorrelation
 
-We check for global spatial autocorrelation
+Global Moran’s I is performed to check if autocorrelation of opioid overdoses exists globally. We find that at teh census block group level, counts of overdose incidents display significant positive autocorrelation.
 
 ```{r global_auto, results='hide', message=FALSE, warning=FALSE}
 
@@ -365,8 +389,8 @@ moran.test(mesa_dataset$overdose_count, mesa_weights)
 
 ### Local Autocorrelation
 
-Here we will look at local autocorrelation.
-Talk about Moran's I and scatterplot. 
+Next, we investigate local autocorrelation using Local Moran's I. 
+The Moran scatterplot below shows the overdose count of each census block is compared to the neighbour’s weighted counts. The scatterplot reveals that majority of autocorrelation is from high overdose values neighboring high values (top right). However, there are also several instances of low values neighboring low values (bottom left).
 
 ```{r moran_scatter, results='hide', message=FALSE, warning=FALSE}
 
@@ -377,7 +401,7 @@ moran.plot(mesa_dataset$overdose_count, mesa_weights,
 
 ```
 
-Talk about Moran's I results here
+We map the various clusters to examine the spatial distribution of the autocorrelation. The result shows that in most of the city the autocorrelation is not significant. However, there is significant high-high autocorrelation in the west and center of the city. In comparison, block groups of low-low autocorrelation are mainly in Mesa's north and parts of the south of city.
 
 ```{r local_auto, results='hide', message=FALSE, warning=FALSE}
 
@@ -517,15 +541,55 @@ ggplot(mesa_corr, aes(Value, overdose_count)) +
 
 # **Modelling**
 
-Based on our explanatory analysis, the variables chosen for the model are: 
+Based on our explanatory analysis, the variables chosen for the model are: median household income, Black population (as percent), Hispanic population (as percent), number of police incidents, homeowner population (as percent), land zoned as commercial (as percent), land zoned as high-density residential (as percent), average distance to vacant property, average distance to graffiti reports, average distance to greenspace and average distance to public safety. 
 
-## OLS and Poisson Baseline Models
+```{r}
+all_vars <- c("overdose_count", "arrests_count", "median_income", "perc_black", "perc_hispanic", "perc_owners",
+              "resid_high_per","commercial_per", "dist_greenspace", "dist_vacant_prop", "dist_graffiti", "dist_public_safety")
+
+ind_vars <- c("arrests_count", "median_income", "perc_black", "perc_hispanic", "perc_owners",
+              "resid_high_per","commercial_per", "dist_greenspace", "dist_vacant_prop", "dist_graffiti")
+
+mesa_all <- mesa_dataset[all_vars]
+st_geometry(mesa_all) <- NULL
+mesa_all <- mesa_all[all_vars]
+```
+
+## OLS and Poisson Baseline Models 
+***By Ayina Anyachebelu***
+
+### Methodology
+
+Talk about methodology of OLS Model and Poisson Model
+
+### Results
+
+Below are the results of the OLS Model. 
+
+```{r}
+reg <- lm(overdose_count ~ ., data = mesa_all)
+summary(reg)
+```
+
+Talk about the results of OLS Model. 
+
+Below are the reslts of the Poisson model. 
+
+```{r}
+preg <- glm(overdose_count ~ ., family = "poisson", data = mesa_all)
+summary(preg)
+```
+
+Talk about the results of the Poisson model.
+
 
 ## Spatial Poisson Models
+***By Ayina Anyachebelu***
 
 ### Methodology
 
 ### Results
+
 
 ## Spatial Lagged Model
 
@@ -553,10 +617,48 @@ Based on our explanatory analysis, the variables chosen for the model are:
 
 # **Discussion of Modelling Results**
 
-# **Clustering**
-
-### Methodology
-
-### Results
-
 # **Conclusion**
+
+Stating the Conclusion of our work
+
+# References
+
+Adams J. F. A. (1889), “Substitutes for opium in chronic diseases”, Boston Medical and Surgical Journal, 121, 15, 351-356.
+
+Arizona Department of Health Services. (2022) Opioid Prevention [Online]. Available at: https://www.azdhs.gov/opioid/ (Accessed: 1 December 2022)
+
+Brinkley-Rubinstein L., A. Macmadu, B. D. L. Marshall, A. Heise, S. I. Ranapurwala, J. D. Rich, T. C. Green (2018) “Risk of fentanyl-involved overdose among those with past year incarceration: Findings from a recent outbreak in 2014 and 2015”, Drug and Alcohol Dependence, 185 (2018), 189-191.
+
+Burns J. M., R. F. Martyres, D. Clode and J. M. Boldero (2004) “Overdose in young people using heroin: Associations with mental health, prescription drug use and personal circumstances”, Medical Journal of Australia, 128, 7, 25-28.
+
+Choi J. I., J. Lee, A. B. Yeh, Q. Lan and H. Kang (2022) “Spatial clustering of heroin-related overdose incidents: a case study in Cincinnati, Ohio”, BMC Public Health, 22, 1253. https://doi.org/10.1186/s12889-022-13557-3
+
+Draanen J. V., C. Tsang, S. Mitra, M. Karamouzian, L. Richardson (2020), “Socioeconomic marginalisation and opioid-related overdose: A systematic review”, Drug and Alcohol Dependence, 214 (2020), 108-127.
+
+Guy G. P., K. Zhang, M. K. Bohm, J. Losby, B. Lewis, R. Young, L. B. Murphy and D. Dowell (2017) “Vital signs: Changes in opioid prescribing in the United States, 2006-2015”, Morbidity and Mortality Weekly Report, 66, 26, 697-704.
+
+Hollingsworth A., C. J. Ruhm and K. Simon (2017) “Macroeconomic conditions and opioid abuse”, Journal of Health Economics, 56 (2017), 223-233.
+
+Kosten T. R. and T. P. George (2002) “The neurobiology of opioid dependence: Implications for treatment”, Science and Practice Perspectives, 1, 1, 13-20.
+
+Krausz R. M., J. N. Westenberg and K. Ziafat (2021) “The opioid overdose crisis as a global health challenge”, Current Opinion in Psychiatry, 34, 4, 405-412.
+
+Lippold K. M., Jones C. M., Olsen E. O. and Giroir B. P. (2019) “Racial/Ethnic and Age Group Differences in Opioid and Synthetic Opioid-Involved Overdose Deaths Among Adults Aged ≥18 Years in Metropolitan Areas - United States, 2015-2017”,  MMWR Morb Mortal Wkly Rep,  68, 4, 967-73. doi: 10.15585/mmwr.mm6843a3. 
+
+Li Z. R., E. Xie, F. W. Crawford, J. L. Warren, K. McConnell, J. T. Copple, T. Johnson and G. S. Gonsalves (2019) “Suspected heroin-related overdose incidents in Cincinnati, Ohio: A spatiotemporal analysis”, PLoS Medicine, 16, 11, 1-15.
+
+Lyden J. and I. A. Binswanger (2019) “The United States opioid epidemic”, Seminars in Perinatology, 43 (2019), 123-131.
+
+Marshall J. R. S. F. Gassner, C. L. Anderson, R. J. Cooper, S. Lotfipour and B. Chakravarthy (2019) “Socioeconomic and geographical disparities in prescription and illicit opioid-related overdose deaths in Orange County, California, from 2010-2014”, Substance Abuse, 40, 1, 80-86.
+
+Montandon G. and A. S. Slutsky (2019), “Solving the opioid crisis; Respiratory depression by opioids as critical end point”, Chest, 156, 4, 653-658.
+
+Office of Governor Ducey. (2017) Governor Ducey Declares Statewide Health Emergency In Opioid Epidemic [Online]. Available at: https://azgovernor.gov/governor/news/2017/06/governor-ducey-declares-statewide-health-emergency-opioid-epidemic (Accessed: 1 December 2022)
+
+Rosenblum A., L. A. Marsch, H. Joseph and R. K. Portenoy (2008), Opioids and the treatment of chronic pain: Controversies, current status and future directions”, Experimental and Clinical Psychopharmacology
+
+Rosner B., J. Neicun, J. C. Yang and A. Roman-Urrestarazu (2019) “Opioid prescription patterns in Germany and the global opioid epidemic: Systematic review of available evidence”, PLoS One, 14, 8, 1-20.
+
+Steif, Ken. (2021) Public Policy Analytics: Code & Context for Data Science in Government. [online]. Available at: https://urbanspatial.github.io/PublicPolicyAnalytics/index.html (Accessed: 1 December 2022)
+
+Waldhoer M., S. E. Bartlett and J. L. Whistler (2004) “Opioid receptors”, Annual Review of Biochemistry, 73 (2004), 953-990. 
