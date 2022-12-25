@@ -407,7 +407,7 @@ moran.plot(mesa_dataset$overdose_count, mesa_weights,
 
 We map the various clusters to examine the spatial distribution of the autocorrelation. The result shows that in most of the city the autocorrelation is not significant. However, there is significant high-high autocorrelation in the west and center of the city. There is one case of low-low autocorrelation in the northeast of the city.
 
-```{r local_auto, results='hide', message=FALSE, warning=FALSE}
+```{r local_auto, fig.height = 5, fig.width=5, results='hide', message=FALSE, warning=FALSE}
 
 # Morans Clusters
 moranCluster <- function(shape, W, var, alpha=0.05)
@@ -435,7 +435,7 @@ moranCluster <- function(shape, W, var, alpha=0.05)
 clusters <- moranCluster(mesa_dataset, W=mesa_weights, var="overdose_count")$results
 mesa_dataset$Ii_cluster <- clusters$sig
 
-tm_shape(mesa_dataset) + tm_polygons(col="Ii_cluster", palette = "Set3", title = "Clusters")
+tm_shape(mesa_dataset) + tm_polygons(col="Ii_cluster", palette = "Set3", title = "Clusters") + tm_layout(title= 'Spatial Autocorrelation Clusters', fontface = 2)
 
 ```
 
@@ -522,7 +522,7 @@ ggcorrplot(cormat)
 
 Finally, we explore the relationship between the potential risk factors and the number of overdoses in each census block group. We find that there are some variables with very low linear correlations to the number of overdoses such as the population, the percent of land zoned as low-density residential, the pecent of land zoned as vacant, and the unemployment rate. On the other hand, variables such as the number of arrests and the percent of homeowners are much more correlated with overdoses. The scatterplots show that several of relationships do not appear to follow a linear pattern, but this phenomenon might be influenced by the strong spatial relationships we previously observed. 
 
-```{r corr_ov, fig.height=6.5, fig.width=6.5, results='hide', message=FALSE, warning=FALSE}
+```{r corr_ov, fig.height=5.5, fig.width=7.5, results='hide', message=FALSE, warning=FALSE}
 
 vars_plus <- append(ind_vars,"overdose_count")
 
@@ -542,9 +542,10 @@ ggplot(mesa_corr, aes(Value, overdose_count)) +
   geom_point(size = 1) +
   geom_text(data = correlation.cor, aes(label = paste("r =", round(correlation, 2))),
             x=-Inf, y=Inf, vjust = 1.5, hjust = -.1) +
-  geom_smooth(method = "lm", se = FALSE, colour = "black") + theme_minimal() +
-  facet_wrap(~Variable, ncol = 5, scales = "free") +
-  labs(title = "Correlations between Number of Overdoses and Risk Variables") + 
+  geom_smooth(method = "lm", se = FALSE, colour = "black") + theme_void() +
+  facet_wrap(~Variable, ncol = 6, scales = "free") +
+  labs(title = "Correlations between Number of Overdoses and Risk Variables \n
+        ") + 
   theme(strip.text.x = element_text(size = 10))
 
 
@@ -554,7 +555,7 @@ ggplot(mesa_corr, aes(Value, overdose_count)) +
 
 After taking into account multicollinearity and the relationship with the overdose count, the variables chosen for the model are: median household income, Black population (as percent), Hispanic population (as percent), number of police incidents, homeowner population (as percent), land zoned as commercial (as percent), land zoned as high-density residential (as percent), average distance to vacant property, average distance to graffiti reports, average distance to greenspace and average distance to public safety. 
 
-```{r}
+```{r results='hide', message=FALSE, warning=FALSE}
 maricopa_crs <- 'EPSG:2223'
 mesa_dataset<- st_read("../mesa_complete_data4.geojson")%>%st_transform(st_crs(maricopa_crs))
 all_vars <- c("overdose_count", "arrests_count", "median_income", "perc_black", "perc_hispanic","perc_owners",
@@ -579,12 +580,12 @@ The formula for the linear regression is as follows:
 $$
 y_i = \beta_0 + \beta_1x_{i1} + \beta_2x_{i2} +... + \beta_nx_{in}   + \epsilon_i
 $$
-where $y$ is the $i$th observation of number of overdoses, $x_i$ corresponds with each of our n potential risk factors, $\beta_0$ represents the intercept term, $\beta_n$ is the nth estimated parameter, and $\epsilon$ is the error term. 
+where $y_i$ is the $i$th observation of number of overdoses, $x_i$ corresponds with each of our n potential risk factors, $\beta_0$ represents the intercept term, $\beta_n$ is the nth estimated parameter, and $\epsilon$ is the error term. 
 
 Considering our dependent variable consists of non-negative overdose counts, we also use a Poisson regression with the following equation:
 
 $$
-ln(y_i) =  \beta_1x_{i1} + \beta_2x_{i2} +... + \beta_nx_{in}   + \epsilon
+ln(y_i) =  \beta_1x_{i1} + \beta_2x_{i2} +... + \beta_nx_{in}   + \epsilon_i
 $$
 where $x_1$ = 1 so $\beta_1$ represents our constant term and for any values of $x_1$...$x_n$ we can use the regression to predict the odds of an overdose happening. 
 
@@ -593,7 +594,7 @@ where $x_1$ = 1 so $\beta_1$ represents our constant term and for any values of 
 
 
 Below are the results of the OLS Model. 
-```{r}
+```{r message=FALSE, warning=FALSE}
 reg <- lm(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic + perc_owners +
           resid_high_per + commercial_per + dist_greenspace + dist_vacant_prop + dist_graffiti + 
             dist_public_safety, 
@@ -607,7 +608,7 @@ Below are the results of the Poisson regression. Using this model, in addition t
 
 Unlike our hypotheses the farther away from public greenspace and public safety resources, the lower the overdose counts. While there are no grounds for causation, the reason for this phenomenon might be the fact that many of these public facilities are nearer to the city center and farther from suburban outskirts, so more overdoses may be happening in these areas.
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 preg <- glm(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic + perc_owners +
           resid_high_per + commercial_per + dist_greenspace + dist_vacant_prop + dist_graffiti + 
             dist_public_safety, family = "poisson", data = mesa_all)
@@ -615,14 +616,32 @@ summary(preg)
 ```
 
 The Moran’s correlation test was conducted to check for residual spatial dependence of both models. 
-As seen below, the test resulted in a Moran’s I of 0.014 and 0.0068 respectively with corresponding Moran I statistics that were not significant on the 5% level. As a result, we cannot retain the null hypothesis that there is no spatial clustering of the residuals but process to conduct spatial regression analysis.
+As seen below, the test resulted in a Moran’s I of 0.014 and 0.0068 respectively with corresponding Moran I statistics that were not significant on the 5% level. As a result, we cannot retain the null hypothesis that there is no spatial clustering of the residuals.
 
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 lm.morantest(reg, mesa_weights, zero.policy=TRUE)
 ```
-```{r}
+```{r message=FALSE, warning=FALSE}
 lm.morantest(preg, mesa_weights, zero.policy=TRUE)
+```
+
+Although we cannot reject the null hypothesis based of our Moran correlation test results, an examination of the residuals of the OLS model (below), shows that their distribution appear to be non-random with large positive residuals in the west and center of the city.  The poisson model has residual values of smaller magnitude which are more evenly spread out spatially. However, there still seems to be some clustering of positive residuals in the west and center of the city. For this reason, we proceed with spatial regression models.
+
+
+```{r fig.height=4, fig.width=7,results='hide', message=FALSE, warning=FALSE}
+mesa_all$res_m1 <- residuals(reg)
+
+legend_title = expression("OLS model residuals") 
+map_mesa_res = tm_shape(mesa_all) +
+tm_fill(col = "res_m1", title = legend_title, palette = magma(256), style = "cont") + tm_layout(bg.color = "white")
+
+mesa_all$res_m2 <- residuals(preg)
+legend_title = expression("Poisson model residuals") 
+map_mesa_res2 = tm_shape(mesa_all) +
+tm_fill(col = "res_m2", title = legend_title, palette = magma(256), style = "cont")+ tm_layout(bg.color = "white")
+
+tmap_arrange(map_mesa_res, map_mesa_res2)
 ```
 
 
@@ -663,28 +682,283 @@ lm.morantest(preg, mesa_weights, zero.policy=TRUE)
 
 ### Methodology
 
-Given that a Poisson regression better represents the relationship between the risk factors and the overdose count, we attempt to integrate this model and the spatial variation in overdose cases using a geographically weighted poisson regression.
+Given that a Poisson regression better represents the relationship between the risk factors and the overdose count, we attempt to integrate this model and the spatial variation in overdose cases using a geographically weighted poisson regression which captures local relationships.
 
---explain GWR and model formula FOR poisson specifically
--- explain parameters -- adaptive vs non and gaussian vs exponential
--- show plot of local residuals to explain why you picked exponential adpative as best
+The geographically weighted poisson regression follows the form:
+
+$$
+ln(y_i) =  \beta_0u_{i} + \beta_1(u_i)x_{i1} + \beta_2(u_i)x_{i2} +... + \beta_n(u_i)x_{in}   + \epsilon
+$$
+where where $y_i$ is the $i$th observation of number of overdoses and the $\beta$ coefficients are functions of the location $u_i$ designating the coordinates of the $i$th census block group, allowing the estimated $\beta$ parameter to differ between census block groups (Poliart et. al, 2021). 
+
+For each census block group, the parameters were estimated by 
+
+$$
+\overset{\wedge}{\beta}_i = (X^TW(u_{xi},u_{yi})X)^{-1}X^TW(u_{xi},u_{yi})Y
+$$
+where $W(u_{xi},u_{yi})$ denotes a spatial weight matrix containing weights calculated based on the distance between the centroid of the $i$th census block group with coordinates (u_{xi},u_{yi}) and its spatial neighbors j (Fortheringham et al, 2003). 
+
+The spatial weight $w_{ij}$ allows for census block groups closer to the $i$th census block group to have a larger influence on the parameter estimation for $\beta_i$. The weight is based on a kernel function. We experiment with two kernel functions the Gaussian and Exponential, which are both continuous functions of the distance between observation points. 
+
+The corresponding weight matrices are calculated as follows
+
+Gaussian: $w_{i j}=\exp \left(-\frac{1}{2}\left(\frac{d_{i j}}{b}\right)^2\right)$     and    Exponential: $w_{i j}=\exp \left(-\frac{\left|d_{i j}\right|}{b}\right)$
+
+where $h$ is the kernel bandwidth and $d_{ij}$ is the distance between points i and j (Gollini et al., 2013). 
+
+For each kernel function, we also experiment with both a fixed kernel (which use a fixed bandwidth) and adaptive kernel (which uses a varying bandwidth based on the number of nearest neighbors from a given regression point.) Given we have census block groups of different sizes, the adaptive kernels could be useful because these kernels change in size based on the density of data. Using the fixed kernels could result in calibration on few observation points for local regression in larger units and vice versa resulting in larger standard errors (Gollini et al., 2013). 
+
+
+```{r results='hide', message=FALSE, warning=FALSE}
+
+maricopa_crs <- 'EPSG:2223'
+mesa_dataset<- st_read("../mesa_complete_data4.geojson")%>%st_transform(st_crs(maricopa_crs))
+
+mesa_dataset<- st_read("../mesa_complete_data4.geojson")%>%st_transform(st_crs(maricopa_crs))
+
+all_vars <- c("overdose_count", "arrests_count", "median_income", "perc_black", 
+              "perc_hispanic","perc_owners","resid_high_per","commercial_per", "dist_greenspace", 
+              "dist_vacant_prop", "dist_graffiti","dist_public_safety")
+mesa_all <- mesa_dataset[all_vars]
+
+st_c <- st_coordinates
+st_coid <- st_centroid
+mesa.c <- st_c(st_coid(mesa_all))
+
+DM<-gw.dist(dp.locat=coordinates(mesa.c))
+mesa_all$long <- mesa.c[,1]
+mesa_all$lat <- mesa.c[,2]
+```
+
+```{r results='hide', message=FALSE, warning=FALSE, include=FALSE}
+
+mesa_all <- as(mesa_all, 'Spatial')
+
+bw.gwrG <- bw.ggwr(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic +
+                     perc_owners + resid_high_per + commercial_per + dist_greenspace +
+                     dist_vacant_prop + dist_graffiti + dist_public_safety,  
+                   data = mesa_all,
+                   family = "poisson",
+                   approach = "AICc",
+                   kernel = "gaussian", 
+                   adaptive = FALSE,
+                   dMat = DM)
+
+
+bw.gwrE <- bw.ggwr(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic +
+                    perc_owners + resid_high_per + commercial_per + dist_greenspace +
+                    dist_vacant_prop + dist_graffiti + dist_public_safety,  
+                  data = mesa_all,
+                  family = "poisson",
+                  approach = "AICc",
+                  kernel = "exponential",
+                  adaptive = FALSE,
+                  dMat = DM)
+
+bw.gwrGA <- bw.ggwr(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic +
+                    perc_owners + resid_high_per + commercial_per + dist_greenspace +
+                    dist_vacant_prop + dist_graffiti + dist_public_safety,  
+                  data = mesa_all,
+                  family = "poisson",
+                  approach = "AICc",
+                  kernel = "gaussian", 
+                  adaptive = TRUE,
+                  dMat = DM)
+
+bw.gwrEA <- bw.ggwr(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic +
+                    perc_owners + resid_high_per + commercial_per + dist_greenspace +
+                    dist_vacant_prop + dist_graffiti + dist_public_safety,  
+                  data = mesa_all,
+                  family = "poisson",
+                  approach = "AICc",
+                  kernel = "exponential", 
+                  adaptive = TRUE,
+                  dMat = DM)
+
+```
+
+We select the optimal bandwidth for each kernel by minimizing the Akaike Information Criterion to account for both prediction accuracy as well as lower complexity of our model (Gollini et al., 2015). For the fixed Gaussian and Exponential kernels the optimal bandwidths were `r bw.gwrG` and `r bw.gwrE` meters respectively. For the adaptive Gaussian and Exponential kernels, the optimal bandwidths was `r bw.gwrEA` nearest neighbors. 
+
+
+```{r results='hide', message=FALSE, warning=FALSE}
+
+# FIT THE 4 GWPRs
+
+#Gaussian non-adaptive
+bgwr.gnPr <- ggwr.basic(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic +
+                        perc_owners + resid_high_per + commercial_per + dist_greenspace +
+                        dist_vacant_prop + dist_graffiti + dist_public_safety, 
+                      data = mesa_all,
+                      family = "poisson",
+                      bw = bw.gwrG,
+                      kernel = "gaussian", 
+                      adaptive = FALSE,
+                      dMat = DM)
+
+
+#gaussian adaptive
+
+bgwr.gPr <- ggwr.basic(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic +
+                        perc_owners + resid_high_per + commercial_per + dist_greenspace +
+                        dist_vacant_prop + dist_graffiti + dist_public_safety, 
+                      data = mesa_all,
+                      family = "poisson",
+                      bw = bw.gwrGA, 
+                      kernel = "gaussian", 
+                      adaptive = TRUE,
+                      dMat = DM)
+
+# exponential non-adaptive
+
+bgwr.nPr <- ggwr.basic(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic +
+                        perc_owners + resid_high_per + commercial_per + dist_greenspace +
+                        dist_vacant_prop + dist_graffiti + dist_public_safety, 
+                      data = mesa_all,
+                      family = "poisson",
+                      bw = bw.gwrE, 
+                      kernel = "exponential", 
+                      adaptive = TRUE,
+                      dMat = DM)
+
+
+#exponential adaptive
+
+bgwr.Pr <- ggwr.basic(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic +
+                        perc_owners + resid_high_per + commercial_per + dist_greenspace +
+                        dist_vacant_prop + dist_graffiti + dist_public_safety, 
+                      data = mesa_all,
+                      family = "poisson",
+                      bw = bw.gwrEA, 
+                      kernel = "exponential", 
+                      adaptive = TRUE,
+                      dMat = DM)
+
+```
 
 
 ### Results
 
--- show the results of the exponential adaptive
--- explain results
--- show plot of coefficients
--- show plot of t values
+We fit the 4 geographically weighted Poisson models using their corresponding optimal bandwidths. We find that the model using the exponential adaptive kernel has the lowest AIC and residual sum of squares and the highest Pseudo R-squared values. Below are the maps of the standard deviation of the local residual values for the models. As mentioned, exponential adaptive kernel appears to have the best fit for our data, so we choose these parameters for our final model. 
 
+```{r residuals_4, results='hide', message=FALSE, warning=FALSE}
+gwr_out <- as.data.frame(bgwr.gnPr$SDF)
+mesa_all$gauss_na_localRes<-(gwr_out$residual)/sd(gwr_out$residual)
+
+gwr_out <- as.data.frame(bgwr.gPr$SDF)
+mesa_all$gauss_localRes<-(gwr_out$residual)/sd(gwr_out$residual)
+
+gwr_out <- as.data.frame(bgwr.nPr$SDF)
+mesa_all$exp_na_localRes<-(gwr_out$residual)/sd(gwr_out$residual)
+
+gwr_out <- as.data.frame(bgwr.Pr$SDF)
+mesa_all$exp_localRes<-(gwr_out$residual)/sd(gwr_out$residual)
+
+my.palette <- brewer.pal(n = 8, name = "RdYlBu")
+
+gauss_na_localRes <-spplot(mesa_all,"gauss_na_localRes", main = "Gauss. Non-Adaptive", 
+                     col="transparent", col.regions = my.palette, cuts = 7)
+
+gauss_localRes<-spplot(mesa_all,"gauss_localRes", main = "Gauss. Adaptive", 
+                         col="transparent",col.regions = my.palette, cuts = 7)
+
+exp_na_localRes<-spplot(mesa_all,"gauss_localRes", main = "Expon. Non-Adaptive", 
+                          col="transparent", col.regions = my.palette, cuts = 7)
+
+exp_localRes<-spplot(mesa_all,"exp_localRes", main = "Expon. Adaptive", 
+                             col="transparent", col.regions = my.palette, cuts = 7)
+
+grid.arrange(gauss_na_localRes, gauss_localRes, exp_na_localRes, exp_localRes,
+             ncol= 3, heights = c(20,20), top = textGrob("Stdev of Residuals", gp=gpar(fontsize=20)))
+```
+
+Below are the results of the geographically weighted poisson regression using an adaptive exponential kernel. The results show that the model has a pseudo R-squared value of 0.69, meaning that it is able to explain almost 70% of the variation in overdose cases. This is a substantial improvement from the 45% R-squared value of the baseline poisson model. 
+
+The results of the GWPR provide us with better insight into how the risk factors vary across the different census block groups. For example, the baseline poisson regression indicated that 1 additional arrest corresponded with a 0.068% increase in overdoses. However, with the GWPR we see that the increase can be over 3 times higher, corresponding to a 0.23% increase in overdoses. The broadness of the ranges in local estimates are even more pronounced for the Hispanic population as well as land zoned as high-density residential. The initial estimate from the baseline model indicated that one percentage point increase in the proportion of Hispanic residents was associated with a 0.7% increase in number of overdoses, but the GWPR reveals that it can be associated with an overdose increase of as high as 2.8% in some city areas. Meanwhile, estimates for increases in incidents corresponding to high-density residential zoning range from as low as 
+0.1% to as high as ~ 2.5%. The results also reveal that a majority of our distance-related risk factors, especially the distance to public greenspace and distance to public safety are almost always negatively correlated with overdose cases, regardless of the part of the city which disaffirms our original hypothesis that in blocks closer to these facilities there will be less incidents. 
+
+```{r warning=FALSE}
+bgwr.Pr
+```
+
+
+
+
+Given that the magnitude of the coefficients is very small, it is useful to examine the test statistics to investigate how the statistical significance of these values change spatially. Below are maps of the pseudo t-values for each of the risk factors. 
+
+From the results, we observe that the number of arrests is almost always statistically significant in all regions, but it is especially significant in the northeast, southeast and western-central areas of the city. Additionally, the hispanic population is increasingly significant closer to the center of the city while the black population is significant in the far west of the city. Distance to greenspace has a significant negative relationship with overdose incidents in the west of the city while distance to public safety has a significnat negative relationship with overdose cases in the east of the city. However, it is important to note when interpreting these results that thes are municipal-run facilities, so for example, our model is only taking into consideration city-owned parks are not accounting for private greenspace which might be available in other areas. Unsurprisingly, land zoned being zoned commercial is only significant in the east of the city which is reasonable as that is farther from the western downtown area where most of the neighborhoods would be zoned as commercial. On the other hand, distance to vacant property is positively statistically significant in the center of the city but negatively statistically significant in the in the southeast. Similarly, median income is positively significant near the downtown area and central-east, but there are enclaves of blocks where the relationship is negative. Finally, homeownership is mainly statistically significant in the northwest of the city. 
+
+
+
+```{r results='hide', fig.height=6, fig.width=9, message=FALSE, warning=FALSE}
+
+
+mesa_all$t_arrests_count<-bgwr.Pr$SDF$arrests_count_TV
+mesa_all$t_perc_black<-bgwr.Pr$SDF$perc_black_TV
+mesa_all$t_perc_hispanic<-bgwr.Pr$SDF$perc_hispanic_TV
+mesa_all$t_dist_public_safety<-bgwr.Pr$SDF$dist_public_safety_TV
+mesa_all$t_resid_high_per<-bgwr.Pr$SDF$resid_high_per_TV
+mesa_all$t_dist_greenspace<-bgwr.Pr$SDF$dist_greenspace_TV
+
+mesa_all$t_median_income<-bgwr.Pr$SDF$median_income_TV
+mesa_all$t_perc_owners<-bgwr.Pr$SDF$perc_owners_TV
+mesa_all$t_commercial_per<-bgwr.Pr$SDF$commercial_per_TV
+mesa_all$t_dist_vacant_prop<-bgwr.Pr$SDF$dist_vacant_prop_TV
+mesa_all$t_dist_graffiti<-bgwr.Pr$SDF$dist_graffiti_TV
+mesa_all$t_Intercept<-bgwr.Pr$SDF$Intercept_TV
+
+
+my.palette <- brewer.pal(n = 7, name = "YlOrRd")
+
+t_arrest_count<-spplot(mesa_all,"t_arrests_count", main=list(label=" Arrests ", cex=1),
+                         col="transparent",col.regions = my.palette, cuts = 6)
+
+t_perc_hispanic<-spplot(mesa_all,"t_perc_hispanic", main=list(label="Hispanic %", cex=1), 
+                     col="transparent",col.regions = my.palette, cuts = 6)
+
+t_perc_black<-spplot(mesa_all,"t_perc_black", main=list(label=" Black % ", cex=1), 
+                  col="transparent",col.regions = my.palette, cuts = 6)
+
+t_resid_high_per<-spplot(mesa_all,"t_resid_high_per", main=list(label="High Dens. Residential", cex=1), 
+                           col="transparent", col.regions = my.palette, cuts = 6)
+
+t_dist_greenspace<-spplot(mesa_all,"t_dist_greenspace", main=list(label="Dist to Greenspace", cex=1), 
+                            col="transparent", col.regions = my.palette, cuts = 6)
+
+t_dist_public_safety<-spplot(mesa_all,"t_dist_public_safety", main=list(label="Dist to Public Safety", cex=1),
+                               col="transparent", col.regions = my.palette, cuts = 6)
+
+t_median_income<-spplot(mesa_all,"t_median_income", main=list(label="Median Income", cex=1), 
+                               col="transparent", col.regions = my.palette, cuts = 3)
+
+t_perc_owners<-spplot(mesa_all,"t_perc_owners", main=list(label=" Homeowner % ", cex=1),
+                               col="transparent", col.regions = my.palette, cuts = 6)
+
+t_commercial_per<-spplot(mesa_all,"t_commercial_per", main=list(label="Commercial %", cex=1),
+                               col="transparent", col.regions = my.palette, cuts = 6)
+
+t_dist_vacant_prop<-spplot(mesa_all,"t_dist_vacant_prop", main=list(label="Dist to Vacant Prop.", cex=1), 
+                               col="transparent", col.regions = my.palette, cuts = 6)
+
+t_dist_graffiti<-spplot(mesa_all,"t_dist_graffiti", main=list(label="Dist to Graffiti", cex=1),
+                               col="transparent", col.regions = my.palette, cuts = 6)
+
+#t_Intercept<-spplot(mesa_all,"t_Intercept", main = "Intercept", 
+                               #col="transparent", col.regions = my.palette, cuts = 6)
+
+grid.arrange(t_arrest_count, t_perc_hispanic, t_perc_black, t_resid_high_per, t_dist_greenspace, 
+             t_dist_public_safety, t_median_income, t_perc_owners, t_commercial_per,
+             t_dist_vacant_prop, t_dist_graffiti,
+              ncol = 4, top = textGrob("Local t-values", gp=gpar(fontsize=20)))
+```
 
 # **Discussion of Modelling Results**
 
 Discussion on the Modelling Results here
+- why we pick GWPR; how the city can target the west effectively based on the results.
 
 # **Conclusion**
 
-Stating the Conclusion of our work
+Summary
 
 # References
 
@@ -696,9 +970,15 @@ Brinkley-Rubinstein L., A. Macmadu, B. D. L. Marshall, A. Heise, S. I. Ranapurwa
 
 Burns J. M., R. F. Martyres, D. Clode and J. M. Boldero (2004) “Overdose in young people using heroin: Associations with mental health, prescription drug use and personal circumstances”, Medical Journal of Australia, 128, 7, 25-28.
 
-Choi J. I., J. Lee, A. B. Yeh, Q. Lan and H. Kang (2022) “Spatial clustering of heroin-related overdose incidents: a case study in Cincinnati, Ohio”, BMC Public Health, 22, 1253. https://doi.org/10.1186/s12889-022-13557-3
+Choi J. I., Lee J, Yeh A. B., Lan Q and Kang H, (2022) “Spatial clustering of heroin-related overdose incidents: a case study in Cincinnati, Ohio”, BMC Public Health, 22, 1253. https://doi.org/10.1186/s12889-022-13557-3
 
-Draanen J. V., C. Tsang, S. Mitra, M. Karamouzian, L. Richardson (2020), “Socioeconomic marginalisation and opioid-related overdose: A systematic review”, Drug and Alcohol Dependence, 214 (2020), 108-127.
+Draanen J. V., C. Tsang, S. Mitra, M. Karamouzian, and L. Richardson (2020), “Socioeconomic marginalisation and opioid-related overdose: A systematic review”, Drug and Alcohol Dependence, 214 (2020), 108-127.
+
+Fotheringham, A.S., Brunsdon, C. and Charlton, M., (2003), "Geographically weighted regression: the analysis of spatially varying relationships". John Wiley & Sons.
+
+Gollini I., Lu B., Charlton M., Brunsdon C., and Harris P. (2013), "GWmodel: an R Package for Exploring Spatial Heterogeneity using Geographically Weighted Models", arXiv, 2013. https://arxiv.org/abs/1306.0413
+
+Gollini I., Charlton M., Brunsdon C., and Harris P. (2015), "GWmodel: an R Package for Exploring Spatial Heterogeneity using Geographically Weighted Models", Journal of Statistical Software, 63(17).
 
 Guy G. P., K. Zhang, M. K. Bohm, J. Losby, B. Lewis, R. Young, L. B. Murphy and D. Dowell (2017) “Vital signs: Changes in opioid prescribing in the United States, 2006-2015”, Morbidity and Mortality Weekly Report, 66, 26, 697-704.
 
@@ -719,6 +999,8 @@ Marshall J. R. S. F. Gassner, C. L. Anderson, R. J. Cooper, S. Lotfipour and B. 
 Montandon G. and A. S. Slutsky (2019), “Solving the opioid crisis; Respiratory depression by opioids as critical end point”, Chest, 156, 4, 653-658.
 
 Office of Governor Ducey. (2017) Governor Ducey Declares Statewide Health Emergency In Opioid Epidemic [Online]. Available at: https://azgovernor.gov/governor/news/2017/06/governor-ducey-declares-statewide-health-emergency-opioid-epidemic (Accessed: 1 December 2022)
+
+Poliart, A., Kirakoya-Samadoulougou, F., Ouédraogo, M. (et al. (2021), "Using geographically weighted Poisson regression to examine the association between socioeconomic factors and hysterectomy incidence in Wallonia, Belgium." BMC Women's Health 21, 373. 
 
 Rosenblum A., L. A. Marsch, H. Joseph and R. K. Portenoy (2008), Opioids and the treatment of chronic pain: Controversies, current status and future directions”, Experimental and Clinical Psychopharmacology
 
