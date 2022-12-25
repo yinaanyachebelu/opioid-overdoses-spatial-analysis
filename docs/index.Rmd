@@ -435,7 +435,7 @@ moranCluster <- function(shape, W, var, alpha=0.05)
 clusters <- moranCluster(mesa_dataset, W=mesa_weights, var="overdose_count")$results
 mesa_dataset$Ii_cluster <- clusters$sig
 
-tm_shape(mesa_dataset) + tm_polygons(col="Ii_cluster", palette = "Set3", title = "Clusters") + tm_layout(title= 'Spatial Autocorrelation Clusters', fontface = 2)
+tm_shape(mesa_dataset) + tm_polygons(col="Ii_cluster", palette = "Set3", title = "Clusters") + tm_layout(title= 'Spatial Autocorrelation', fontface = 2)
 
 ```
 
