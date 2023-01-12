@@ -1,0 +1,85 @@
+
+```{r results='hide', message=FALSE, warning=FALSE, include=FALSE}
+
+library(here)
+library(magrittr)
+library(sf)
+library(expss)
+library(tmap)
+library(tidyverse)
+library(here)
+library(janitor)
+library(RColorBrewer)
+library(spatstat)
+library(raster)
+library(rosm)
+library(leaflet)
+library(spdep)
+library(rgdal)
+library(ggplot2)
+library(spatialreg)
+library(viridis)
+library(mgcv)
+```
+
+```{r results='hide', message=FALSE, warning=FALSE, include=FALSE}
+mesa_all <- st_read("~/Documents/uni/MSc_geospatial_sciences/spatial_analysis_and_geocomp/project/data_for_project/opioid-overdoses-spatial-analysis-main/mesa_complete_data4.geojson")
+```
+
+```{r results='hide', message=FALSE, warning=FALSE, include=FALSE}
+mesa_all$new_arrests_count <- ifelse(mesa_all$arrests_count == 0, 0.00001, mesa_all$arrests_count)
+mesa_all$new_resid_high_per <- ifelse(mesa_all$resid_high_per == 0, 0.00001, mesa_all$resid_high_per)
+```
+
+```{r results='hide', message=FALSE, warning=FALSE, include=FALSE}
+ols_reg <- lm(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic + perc_owners +
+          resid_high_per + commercial_per + dist_greenspace + dist_vacant_prop + dist_graffiti + 
+            dist_public_safety, 
+          data = mesa_all)
+```
+
+From the OLS multiple linear regression model, an adjusted R-squared value of 0.31 was observed as seen in the figure below (figure ?), suggesting a significant amount of variance in the number of overdose cases was left unexplained. 
+
+```{r message=FALSE, warning=FALSE}
+summary(ols_reg)
+```
+
+Figure ?: OlS Linear Regression Model Results
+
+With this in mind, the residual values from the OLS regression were observed to see whether any significant autocorrelation existed in these values. It is unclear to see this from the map below (figure ?), but there do seem to be significant clusters of positive residuals to the west of the city. While this histogram of residuals shows that an approximately normally distribution on the most part (figure ?), outliers to the positive side of the spectrum lead to deviation at the right tail. This is further evidenced by deviation at the right tail of the QQ-plot (figure ?).
+
+```{r echo=FALSE}
+mesa_all$lm_res  <- residuals(ols_reg)
+legend_title <- expression("OLS Model Residuals")
+tm_shape(mesa_all) + tm_fill(col = "lm_res", title = legend_title, palette = magma(256), style = "cont") + tm_layout(bg.color = "white")
+```
+
+Figure ?: Spatial Distribution of Linear Model Residuals
+
+```{r echo=FALSE}
+ggplot(data=mesa_all, aes(lm_res)) + geom_histogram() + ggtitle("Frequency Distribution of Residuals from OLS Regression Model") + 
+  labs(y = "Count of Census Block Groups", x = "Residual Value")+
+  theme_minimal()
+```
+
+Figure ?: Histogram of Linear Model Residuals
+
+```{r echo=FALSE}
+ggplot(data=mesa_all, aes(sample=lm_res)) + geom_qq() + geom_qq_line() + labs(y = "Sample", x = "Theoretical")
+```
+
+Figure ?: QQ-plot of Linear Model Residuals
+
+These point to key assumptions in the OLS linear regression being violated, most notably the assumption that residuals are independent and not spatially autocorrelated. We attempt to integrate a spatial lag model as one of the spatial regression models to account for spatial autocorrelation in our data. 
+
+The spatial lag model assumes that autocorrelation is present in the dependant variable, that being opioid overdose cases. It assumes that the dependant variable is correlated with the same variable at nearby locations, above and beyond other covariates (Ward and Gleditsch 2008).
+
+The spatial lag model is defined as follows:
+
+$$
+Y = \rho Wy + X\beta + \epsilon
+$$
+
+Where $y$ is a vector of observations, $\rho$ is an autocorrelation parameter, $W$ is an $n*n$ spatial weight matrix  and $\epsilon$ is an $n*1$ vector of independent and identically distributed errors (iid). The spatial lag model follows the iid assumption, that being that the errors are normally distributed with a mean of 0 and a variance of $\sigma^2$.
+
+Before fitting a spatial lag model, it was assessed whether any of the independent variables required transformation prior to fitting a model. A Generalised Additive Model (GAM) was used to fit a smooth non-parametric function to the opioid overdoes variable using predictor variables (Zuur et al. 2007), and these results were tested against the distribution of independent variables to assess which transformations were appropriate. A spatial lag model was run with both predictor variables left untransformed and one with appropriate transformations to assess which model had the best fit. 

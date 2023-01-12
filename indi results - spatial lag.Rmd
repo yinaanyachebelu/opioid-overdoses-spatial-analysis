@@ -1,0 +1,112 @@
+
+```{r results='hide', message=FALSE, warning=FALSE, include=FALSE}
+
+library(here)
+library(magrittr)
+library(sf)
+library(expss)
+library(tmap)
+library(tidyverse)
+library(here)
+library(janitor)
+library(RColorBrewer)
+library(spatstat)
+library(raster)
+library(rosm)
+library(leaflet)
+library(spdep)
+library(rgdal)
+library(ggplot2)
+library(spatialreg)
+library(viridis)
+library(mgcv)
+```
+
+```{r results='hide', message=FALSE, warning=FALSE, include=FALSE}
+mesa_all <- st_read("~/Documents/uni/MSc_geospatial_sciences/spatial_analysis_and_geocomp/project/data_for_project/opioid-overdoses-spatial-analysis-main/mesa_complete_data4.geojson")
+```
+
+```{r results='hide', message=FALSE, warning=FALSE, include=FALSE}
+mesa_all$new_arrests_count <- ifelse(mesa_all$arrests_count == 0, 0.00001, mesa_all$arrests_count)
+mesa_all$new_resid_high_per <- ifelse(mesa_all$resid_high_per == 0, 0.00001, mesa_all$resid_high_per)
+```
+
+```{r results='hide', message=FALSE, warning=FALSE, include=FALSE}
+mesa.W <- nb2listw(poly2nb(mesa_all))
+```
+
+```{r results='hide', message=FALSE, warning=FALSE, include=FALSE}
+GAM <- gam(overdose_count ~ s(new_arrests_count) + s(median_income) + s(perc_black) + s(perc_hispanic) + s(perc_owners) + s(new_resid_high_per) + s(commercial_per) + s(dist_greenspace) + s(dist_vacant_prop) + s(dist_graffiti) + s(dist_public_safety), data = mesa_all)
+```
+
+```{r message=FALSE, warning=FALSE}
+summary(GAM)
+```
+
+Figure ?: Summary of GAM results
+
+Above are the results from the GAM test on predictor variables (figure ?). Only 3 variables showed statistical significance to the 0.05% significance level, that being number of police incidents, percentage of land zoned as high-density residential and average distance to public safety. In the context of a GAM, coefficients of 1 for the effective degrees of freedom coefficient (edf) tend to correspond to smooth functions that are more flexible, a good indicator that the relationship between this predictor variable and the dependant is non-linear. With all three statistically significant variables having edf coefficients above 1, their distributions were analysed further to assess if transformations were appropriate. 
+
+While distance to public safety replicated an approximately normal distribution, both police incidents and percentage of land zoned as high-density residentials showed distributions heavily skewed to the left. Therefore, a logarithmic transformation was only applied to police incidents and percentage of land zoned as high-density residentials, with the results from this model summarised below (figure ?). 
+
+```{r results='hide', message=FALSE, warning=FALSE, include=FALSE}
+logged.mesa.lag <- lagsarlm(overdose_count ~ log(new_arrests_count) + median_income + perc_black + perc_hispanic + perc_owners + log(new_resid_high_per) + commercial_per + dist_greenspace + dist_vacant_prop + dist_graffiti + dist_public_safety, data = mesa_all, listw = mesa.W)
+```
+
+```{r message=FALSE, warning=FALSE} 
+summary(logged.mesa.lag)
+```
+
+Figure ?: Spatial Lag Model with Transformed Variables
+
+A model was also run with all predictor variables left untransformed, with the results from this model shown below (figure ?).
+
+```{r results='hide', message=FALSE, warning=FALSE, include=FALSE}
+mesa.lag <- lagsarlm(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic + perc_owners + resid_high_per + commercial_per + dist_greenspace + dist_vacant_prop + dist_graffiti + dist_public_safety, data = mesa_all, listw = mesa.W)
+```
+
+```{r message=FALSE, warning=FALSE} 
+summary(mesa.lag)
+```
+
+Figure ?: Spatial Lag Model with Variables left in their natural form
+
+From a first glance, we can see that the model with non-transformed predictor variables has both a lower AIC coefficient (2181.2 vs 2204.4) and a higher log likelihood (-1.076.6 vs -1.088.2). These both indicate that the model with untransformed predictor variables fits our data much better, and further analysis focused on this model.
+
+From the individual variables, only four variables showed statistical significance at the 5% significance level, these being police incidents, Hispanic population percentage, percentage of land zoned as high-density residential and average distance to public safety. While all of their respective coefficients were substantially low, they were all positively associated with opioid overdose cases. For example, the spatial lag model indicates that a one increase in police incidents corresponded to a 0.006% increase in opioid overdoses, and a 1 increase in percentage of Hispanic population corresponded to a 0.05% increase in overdoses. While these observations reaffirm our hypotheses of higher opioid overdoes being found in areas with increased arrests (Choi et al. 2022), higher Latina communities (Lippold et al. 2019) and increased distances from public safety (Li et al. 2019), it is important to assess the suitability of the spatial lag model as a whole before making any final conclusions.
+
+The p-value from the rho autocorrelation parameter of 0.448 is a strong indicator that the additionality of $\rho$ does not significantly improve the model fit. Furthermore, the p-value of the Wald test of 0.442 indicates that there is insufficient evidence to reject the null hypothesis that the parameters of the spatial lag variable are equal to zero.
+
+The residuals from this spatial lag model further prove that the spatial lag model did a poor job in accounting for the observed spatial autocorrelation across Mesa, given their almost identical nature to residuals from the linear OLS regression model. These can be seen bellow in the map (figure ?), histogram (figure ?) and QQ-plot (figure ?) of the spatial lag model residuals. 
+
+```{r echo=FALSE}
+mesa_all$log_res  <- residuals(mesa.lag)
+legend_title <- expression("Spatial Lag Model Residuals")
+tm_shape(mesa_all) + tm_fill(col = "log_res", title = legend_title, palette = magma(256), style = "cont") + tm_layout(bg.color = "white")
+```
+
+Figure ?: Spatial Distribution of Spatial Lag Model Residuals
+
+```{r echo=FALSE}
+ggplot(data=mesa_all, aes(log_res)) + geom_histogram() + ggtitle("Frequency Distribution of Residuals from Spatial Lag Model") + 
+  labs(y = "Count of Census Block Groups", x = "Residual Value")+
+  theme_minimal()
+```
+
+Figure ?: Histogram of Spatial Lag Model Residuals
+
+```{r echo=FALSE}
+ggplot(data=mesa_all, aes(sample=log_res)) + geom_qq() + geom_qq_line() + labs(y = "Sample", x = "Theoretical")
+```
+
+Figure ?: QQ-plot of Spatial Lag Model Residuals
+
+All in all, these observations indicate that there is insufficient evidence to reject the null hypothesis. Therefore, we cannot say with confidence that the dependant variable (opioid overdoses) is correlated with the same variable at nearby locations. Different spatial regression models may better explain the spatial autocorrelation observed from the exploratory spatial data analysis.
+
+references:
+
+Ward M. and K. Gleditsch (2008), Spatial Regression Models, SAGE Publications.
+
+Zuur A. F., E. N. Leno and G. M. Smith (2007) Analysing Ecological Data: Statistics for Biology and Health, Springer: New York.
+
+
