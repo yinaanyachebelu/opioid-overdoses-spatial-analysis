@@ -693,14 +693,14 @@ Before fitting a spatial lag model, it was assessed whether any of the independe
 
 ### Results
 
-```{r results='hide', message=FALSE, warning=FALSE, include=FALSE}
+```{r results='hide', message=FALSE, warning=FALSE}
 mesa_all <- mesa_dataset[all_vars]
 mesa_all$new_arrests_count <- ifelse(mesa_all$arrests_count == 0, 0.00001, mesa_all$arrests_count)
 mesa_all$new_resid_high_per <- ifelse(mesa_all$resid_high_per == 0, 0.00001, mesa_all$resid_high_per)
 mesa.W <- nb2listw(poly2nb(mesa_all))
 ```
 
-```{r results='hide', message=FALSE, warning=FALSE, include=FALSE}
+```{r message=FALSE, warning=FALSE}
 GAM <- gam(overdose_count ~ s(new_arrests_count) + s(median_income) + s(perc_black) + s(perc_hispanic) + s(perc_owners) + s(new_resid_high_per) + s(commercial_per) + s(dist_greenspace) + s(dist_vacant_prop) + s(dist_graffiti) + s(dist_public_safety), data = mesa_all)
 summary(GAM)
 ```
@@ -711,7 +711,7 @@ Above are the results from the GAM test on predictor variables (figure ?). Only 
 
 While distance to public safety replicated an approximately normal distribution, both police incidents and percentage of land zoned as high-density residentials showed distributions heavily skewed to the left. Therefore, a logarithmic transformation was only applied to police incidents and percentage of land zoned as high-density residentials, with the results from this model summarised below (figure ?). 
 
-```{r results='hide', message=FALSE, warning=FALSE, include=FALSE}
+```{r  message=FALSE, warning=FALSE}
 logged.mesa.lag <- lagsarlm(overdose_count ~ log(new_arrests_count) + median_income + perc_black + perc_hispanic + perc_owners + log(new_resid_high_per) + commercial_per + dist_greenspace + dist_vacant_prop + dist_graffiti + dist_public_safety, data = mesa_all, listw = mesa.W)
 summary(logged.mesa.lag)
 ```
@@ -724,11 +724,11 @@ Figure ?: Spatial Lag Model with Transformed Variables
 
 A model was also run with all predictor variables left untransformed, with the results from this model shown below (figure ?).
 
-```{r results='hide', message=FALSE, warning=FALSE, include=FALSE}
+```{r results='hide', message=FALSE, warning=FALSE}
 mesa.lag <- lagsarlm(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic + perc_owners + resid_high_per + commercial_per + dist_greenspace + dist_vacant_prop + dist_graffiti + dist_public_safety, data = mesa_all, listw = mesa.W)
 ```
 
-```{r results='hide', message=FALSE, warning=FALSE} 
+```{r message=FALSE, warning=FALSE} 
 summary(mesa.lag)
 ```
 
