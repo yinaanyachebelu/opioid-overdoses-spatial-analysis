@@ -1,0 +1,53 @@
+The formula of the Spatial Durbin Model is as follows:
+$$
+Y = \rho Wy + X\beta + WX \theta + \epsilon
+$$
+The Spatial Durbin Model (SDM) a model that extends from the Spatial Lag Model, that takes account of the spillover effects of both the independent variables and the dependent variable in one model: $Y$ is the vector of observations, $\rho W$ is the scalar autocorrelation parameter and $n∗n$ is the spatial weight matrix that allows neighboring parameters for the dependent variable, $X\beta$ is the $n∗m$ matrix and $n∗1$ estimated parameters of the independent variables respectively. $WX$ creates a weighed sum of independent variables neighboring the location, it is then each multiplied by the $m∗1$ autocorrelation parameter $\theta$. Lastly, the $\epsilon$ is the expected normally distributed errors.
+
+```{r message=FALSE, warning=FALSE, include=FALSE, results='hide'}
+library(sf)
+library(tmap)
+library(tidyverse)
+library(RColorBrewer)
+library(ggplot2)
+library(spdep)
+library(spatialreg)
+library(viridis)
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE, results='hide'}
+mesa_data <- read_sf("mesa_complete_data4.geojson")
+mesa.W <- nb2listw(poly2nb(mesa_data))
+options(scipen = 7)
+```
+
+```{r message=FALSE, warning=FALSE}
+mesa.durbin <- lagsarlm(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic + perc_owners + resid_high_per + commercial_per + dist_greenspace + dist_vacant_prop + dist_graffiti + dist_public_safety, data = mesa_data, listw = mesa.W, type="mixed")
+summary(mesa.durbin)
+```
+Figure ?: Spatial Durbin Model Results
+
+The results of the spatial durbin model are shown above. Rho, the spatial autoregressive term, is 0.019, with a p-value of 0.830, which is similar to the result of the spatial lag model, indicating that it does not necessarily improve fitting the model with the additional $p$. Also comparing, to the spatial lag model, the log-likelihood is higher (-1.071.7 vs -1.076.6), but the AIC coefficient is higher as well (2193.3 vs 2181.2), so whether adding the spatially lagged independent variable effect improves fitting the model is contradictory. Furthermore, the Wald test, another spatial dependence test, has a value of 0.046 with a p-value of 0.831, showing that it is also insignificant. Lastly, for the LM test, which tests residual autocorrelation, the chi-square value is 0.097 with a p-value of 0.755. It indicates that this model does not perform better in accounting for the autocorrelation in the data.
+
+Next, looking at the coefficients of the independent variables as well as the lagged independent variables, only one variable showed statistical significance, with a 5% significance level, being the percentage of land zoned as high-density residential. It has a positive relationship with opioid overdose cases, that a 1% increase in the percentage of land zoned as high-density residential corresponded to a 0.055 increase in opioid overdose cases count in the area. Comparing to the spatial lag model, other 3 significant variables including police incidents, Hispanic population percentage and average distance to public safety are insignificant in the spatial durbin model. 
+
+```{r echo=FALSE}
+mesa_data$mesa.res <- residuals(mesa.durbin)
+mesa_data$mesa.fit <- exp(fitted.values(mesa.durbin))
+tm_shape(mesa_data)+tm_polygons(col = "mesa.res", title = "Spatial Durbin Model Residuals", palette = magma(256), style="cont")
+```
+Figure ?: Spatial Distribution of Spatial Durbin Model Residuals
+
+```{r echo=FALSE}
+ggplot(data=mesa_data, aes(mesa.res)) + geom_histogram() + ggtitle("Frequency Distribution of Residuals from Spatial Durbin Model") + 
+  labs(y = "Count of Census Block Groups", x = "Residual Value")+
+  theme_minimal()
+```
+Figure ?: Histogram of Spatial Durbin Model Residuals
+
+```{r echo=FALSE}
+ggplot(data=mesa_data, aes(sample=mesa.res)) + geom_qq() + geom_qq_line() + labs(y = "Sample", x = "Theoretical")
+```
+Figure ?: QQ-plot of Spatial Durbin Model Residuals
+
+Similar to the spatial lag model, the plotting of the residuals of the spatial durbin model shows they need to be accounted for in the model since the residuals are almost identical to those of the linear OLS regression and the spatial lag model. Therefore, the spatially lagged dependent variable with the spatially lagged independent variables in the spatial durbin model cannot fully explain the opioid overdose data in Mesa. Other spatial regression models may show a better fit in this case.
