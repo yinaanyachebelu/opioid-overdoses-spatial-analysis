@@ -54,6 +54,7 @@ library(rosm)
 library(leaflet)
 library(rgdal)
 library(mgcv)
+library(pander)
 
 options(scipen=999)
 ```
@@ -348,6 +349,31 @@ ind_vars <- c("pop", "arrests_count", "median_income",
                "resid_high_per", "resid_low_per", "commercial_per",
                "dist_public_safety", "dist_greenspace", "dist_vacant_prop", "dist_comm_dev", "dist_graffiti")
 ```
+
+Below is a list of the variables used in the analysis and what they represent:
+
+| Variable Name      | Risk Factor Measured                                       |
+|:-------------------|:-----------------------------------------------------------|
+| pop                | total population                                           |
+| arrests_count      | number of arrests                                          |
+| median income      | median household income                                    |
+| perc_white         | percent of population that is white                        |
+| perc_black         | percent of population that is black                        |
+| perc_hispanic      | percent of population that is hispanic                     |
+| perc_unemployed    | percent of population that is unemployed                   |
+| perc_owners        | percent of population that are homeowners                  |
+| perc_renters       | percent of population that are renters                     |
+| perc_vacant        | percent of properties that are vacant                      |
+| resid_high_per     | percent of land zoned as high-density residential          |
+| resid_low_per      | percent of land zoned as low-density residential           |
+| commercial_per     | percent of land zoned as commercial                        |
+| dist_public_safety | average distance to the 3 nearest public safety facilities |
+| dist_greenspace    | average distance to the 3 nearest public green spaces      |
+| dist_vacant_prop   | average distance to the 3 nearest city-owned vacant lands  |
+| dist_comm_dev      | average distance to the 3 nearest community/arts centers   |
+| dist_graffitti     | average distance to the 3 nearest graffiti reports         |
+
+
 
 ## Overdoses
 
@@ -660,21 +686,20 @@ tmap_arrange(map_mesa_res, map_mesa_res2)
 
 The residual values from the OLS regression were observed to see whether any significant autocorrelation existed in these values. In the map above, there do seem to be significant clusters of positive residuals to the west of the city. While this histogram of residuals shows that an approximately normally distribution on the most part (figure ?), outliers to the positive side of the spectrum lead to deviation at the right tail. This is further evidenced by deviation at the right tail of the QQ-plot (figure ?).
 
-```{r results='hide', message=FALSE, warning=FALSE}
+```{r fig.height=5, fig.width=9,results='hide', message=FALSE, warning=FALSE}
 
 mesa_all$lm_res  <- residuals(reg)
-ggplot(data=mesa_all, aes(lm_res)) + geom_histogram() + ggtitle("Frequency Distribution of Residuals from OLS Regression Model") + 
+
+hist <- ggplot(data=mesa_all, aes(lm_res)) + geom_histogram() + ggtitle("Frequency Distribution") + 
   labs(y = "Count of Census Block Groups", x = "Residual Value")+
   theme_minimal()
+
+qq <- ggplot(data=mesa_all, aes(sample=lm_res)) + geom_qq() + geom_qq_line() + labs(y = "Sample", x = "Theoretical")
+
+hist + qq
 ```
+***Figure ?***
 
-Figure ?: Histogram of Linear Model Residuals
-
-```{r results='hide', message=FALSE, warning=FALSE}
-ggplot(data=mesa_all, aes(sample=lm_res)) + geom_qq() + geom_qq_line() + labs(y = "Sample", x = "Theoretical")
-```
-
-Figure ?: QQ-plot of Linear Model Residuals
 
 The results of the OLS model point to key assumptions of linear regression being violated, most notably the assumption that residuals are independent and not spatially autocorrelated. We attempt to integrate a spatial lag model as one of the spatial regression models to account for spatial autocorrelation in our data. 
 
@@ -709,16 +734,12 @@ Figure ?: Summary of GAM results
 
 Above are the results from the GAM test on predictor variables (figure ?). Only 3 variables showed statistical significance to the 0.05% significance level, that being number of police incidents, percentage of land zoned as high-density residential and average distance to public safety. In the context of a GAM, coefficients of 1 for the effective degrees of freedom coefficient (edf) tend to correspond to smooth functions that are more flexible, a good indicator that the relationship between this predictor variable and the dependant is non-linear. With all three statistically significant variables having edf coefficients above 1, their distributions were analysed further to assess if transformations were appropriate. 
 
-While distance to public safety replicated an approximately normal distribution, both police incidents and percentage of land zoned as high-density residentials showed distributions heavily skewed to the left. Therefore, a logarithmic transformation was only applied to police incidents and percentage of land zoned as high-density residentials, with the results from this model summarised below (figure ?). 
+While distance to public safety replicated an approximately normal distribution, both police incidents and percentage of land zoned as high-density residential showed distributions heavily skewed to the left. Therefore, a logarithmic transformation was only applied to police incidents and percentage of land zoned as high-density residential, with the results from this model summarised below (figure ?). 
 
 ```{r  message=FALSE, warning=FALSE}
 logged.mesa.lag <- lagsarlm(overdose_count ~ log(new_arrests_count) + median_income + perc_black + perc_hispanic + perc_owners + log(new_resid_high_per) + commercial_per + dist_greenspace + dist_vacant_prop + dist_graffiti + dist_public_safety, data = mesa_all, listw = mesa.W)
 summary(logged.mesa.lag)
 ```
-
-Figure ?: Spatial Lag Model with Transformed Variables
-
-A model was also run with all predictor variables left untransformed, with the results from this model shown below (figure ?).
 
 Figure ?: Spatial Lag Model with Transformed Variables
 
@@ -742,29 +763,28 @@ The p-value from the rho autocorrelation parameter of 0.448 is a strong indicato
 
 The residuals from this spatial lag model further prove that the spatial lag model did a poor job in accounting for the observed spatial autocorrelation across Mesa, given their almost identical nature to residuals from the linear OLS regression model. These can be seen bellow in the map (figure ?), histogram (figure ?) and QQ-plot (figure ?) of the spatial lag model residuals.
 
-```{r results='hide', message=FALSE, warning=FALSE}
+```{r fig.height=4, fig.width=9, results='hide', message=FALSE, warning=FALSE}
 mesa_all$log_res  <- residuals(mesa.lag)
-legend_title <- expression("Spatial Lag Model Residuals")
-tm_shape(mesa_all) + tm_fill(col = "log_res", title = legend_title, palette = magma(256), style = "cont") + tm_layout(bg.color = "white")
-```
-
-Figure ?: Spatial Distribution of Spatial Lag Model Residuals
-
-```{r results='hide', message=FALSE, warning=FALSE}
-ggplot(data=mesa_all, aes(log_res)) + geom_histogram() + ggtitle("Frequency Distribution of Residuals from Spatial Lag Model") + 
-  labs(y = "Count of Census Block Groups", x = "Residual Value")+
+map <- ggplot(data = mesa_all) +
+  geom_sf(aes(fill = log_res)) +
+  ggtitle(label = "Panel A")+scale_fill_viridis_c(option = "magma")+theme_minimal()+theme(axis.text = element_blank(), axis.ticks = element_blank())
+          
+hist <- ggplot(data=mesa_all, aes(log_res)) + geom_histogram() + ggtitle("Panel B") + 
+  labs(y = "Count", x = "Residual Value")+
   theme_minimal()
+
+qq<-ggplot(data=mesa_all, aes(sample=log_res)) + geom_qq() + geom_qq_line() + labs(y = "Sample", x = "Theoretical") +ggtitle(label = "Panel C")
+
+map + hist + qq
+
 ```
 
-Figure ?: Histogram of Spatial Lag Model Residuals
+***Figure ?: Spatial Lag Model Residuals***
+***Panel A: Spatial Distribution of Residuals,***
+***Panel B: Frequency Distribution of Residuals,***
+***Panel C: QQ Plot***
 
-```{r results='hide', message=FALSE, warning=FALSE}
-ggplot(data=mesa_all, aes(sample=log_res)) + geom_qq() + geom_qq_line() + labs(y = "Sample", x = "Theoretical")
-```
-
-Figure ?: QQ-plot of Spatial Lag Model Residuals
-
-All in all, these observations indicate that there is insufficient evidence to reject the null hypothesis. Therefore, we cannot say with confidence that the dependant variable (opioid overdoses) is correlated with the same variable at nearby locations. Different spatial regression models may better explain the spatial autocorrelation observed from the exploratory spatial data analysis.
+All in all, these observations indicate that there is insufficient evidence to reject the null hypothesis. Therefore, we cannot say with confidence that the dependent variable (opioid overdoses) is correlated with the same variable at nearby locations. Different spatial regression models may better explain the spatial autocorrelation observed from the exploratory spatial data analysis.
 
 
 ## Spatial Error Model
@@ -776,11 +796,59 @@ All in all, these observations indicate that there is insufficient evidence to r
 
 
 ## Spatial Durbin Watson Model
-***By ____***
+***By James Tse***
 
 ### Methodology
 
+The formula of the Spatial Durbin Model is as follows:
+$$
+Y = \rho Wy + X\beta + WX \theta + \epsilon
+$$
+
+The Spatial Durbin Model (SDM) a model that extends from the Spatial Lag Model, that takes account of the spillover effects of both the independent variables and the dependent variable in one model: $Y$ is the vector of observations, $\rho W$ is the scalar autocorrelation parameter and $n∗n$ is the spatial weight matrix that allows neighboring parameters for the dependent variable, $X\beta$ is the $n∗m$ matrix and $n∗1$ estimated parameters of the independent variables respectively. $WX$ creates a weighed sum of independent variables neighboring the location, it is then each multiplied by the $m∗1$ autocorrelation parameter $\theta$. Lastly, the $\epsilon$ is the expected normally distributed errors.
+
 ### Results
+
+The results of the Spatial Durbin model are shown below.
+
+```{r message=FALSE, warning=FALSE}
+mesa_data <- mesa_all
+mesa.W <- nb2listw(poly2nb(mesa_data))
+mesa.durbin <- lagsarlm(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic + perc_owners + resid_high_per + commercial_per + dist_greenspace + dist_vacant_prop + dist_graffiti + dist_public_safety, data = mesa_data, listw = mesa.W, type="mixed")
+summary(mesa.durbin)
+```
+
+As seen in the results, Rho, the spatial autoregressive term, is 0.019, with a p-value of 0.830, which is similar to the result of the spatial lag model, indicating that it does not necessarily improve fitting the model with the additional $p$. Also comparing, to the spatial lag model, the log-likelihood is higher (-1.071.7 vs -1.076.6), but the AIC coefficient is higher as well (2193.3 vs 2181.2), so whether adding the spatially lagged independent variable effect improves fitting the model is contradictory. Furthermore, the Wald test, another spatial dependence test, has a value of 0.046 with a p-value of 0.831, showing that it is also insignificant. Lastly, for the LM test, which tests residual autocorrelation, the chi-square value is 0.097 with a p-value of 0.755. It indicates that this model does not perform better in accounting for the autocorrelation in the data.
+
+Next, looking at the coefficients of the independent variables as well as the lagged independent variables, only one variable showed statistical significance, with a 5% significance level, being the percentage of land zoned as high-density residential. It has a positive relationship with opioid overdose cases, that a 1% increase in the percentage of land zoned as high-density residential corresponded to a 0.055 increase in opioid overdose cases count in the area. Comparing to the spatial lag model, other 3 significant variables including police incidents, Hispanic population percentage and average distance to public safety are insignificant in the spatial durbin model. 
+
+
+```{r fig.height=4, fig.width=9, results='hide', message=FALSE, warning=FALSE}
+mesa_data$mesa.res <- residuals(mesa.durbin)
+mesa_data$mesa.fit <- exp(fitted.values(mesa.durbin))
+
+map <- ggplot(data = mesa_data) +
+  geom_sf(aes(fill = mesa.res)) +
+  ggtitle(label = "Panel A")+scale_fill_viridis_c(option = "magma")+theme_minimal()+ theme(axis.text= element_blank(), axis.ticks = element_blank())
+          
+hist <- ggplot(data=mesa_data, aes(mesa.res)) + geom_histogram() + ggtitle("Panel B") + 
+  labs(y = "Count", x = "Residual Value")+
+  theme_minimal()
+
+qq<-ggplot(data=mesa_data, aes(sample=mesa.res)) + geom_qq() + geom_qq_line() + labs(y = "Sample", x = "Theoretical") +ggtitle(label = "Panel C")
+
+map + hist + qq
+
+```
+
+***Figure ?: Spatial Lag Model Residuals***
+***Panel A: Spatial Distribution of Residuals,***
+***Panel B: Frequency Distribution of Residuals,***
+***Panel C: QQ Plot***
+
+
+Similar to the spatial lag model, the plotting of the residuals of the spatial durbin model shows they need to be accounted for in the model since the residuals are almost identical to those of the linear OLS regression and the spatial lag model. Therefore, the spatially lagged dependent variable with the spatially lagged independent variables in the spatial durbin model cannot fully explain the opioid overdose data in Mesa. Other spatial regression models may show a better fit in this case.
+
 
 
 ## Geographically Weighted Regression
