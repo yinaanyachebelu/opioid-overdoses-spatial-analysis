@@ -1,0 +1,85 @@
+---
+title: "Spatial Error Model"
+author: "Yiru Xu"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+# Spatial Error Model
+
+```{r message=FALSE, warning=FALSE, include=FALSE, results='hide'}
+library(tmap)
+library(spdep)
+library(spatialreg)
+library(knitr)
+library(viridis)
+library(ggplot2)
+library(r2symbols)
+```
+
+**Methodology**
+
+The spatial error model assumes autocorrelation is a result of some unobserved variable(s) and is present in the residuals of the model, which means that it assume that only the error terms in the regression are correlated. The basic form of the model is as follows:
+
+$y = X\beta+\epsilon$
+
+$\epsilon = \lambda W \epsilon + \xi$
+
+Therefore, the final spatial error model can be specified as:
+
+$y = X \beta + \lambda W \epsilon + \xi$
+
+Same to the OLS model, $y$ is an $n *1$ vector of independent variable;$X$ is an $n *m$ matrix of independent variables; $\beta$ is an $m *1$ vector of parameters to be estimated.
+In the OLS regression we estimate a single error term, $\epsilon$. While in a spatial error model, we split this error into random error and spatially structured error. Here, random error (unexplained by our model) is $\xi$, independent identically distributed (i.i.d.) errors. Spatially structured error is composed of the the spatial error parameter $\lambda$, and the original $\epsilon$ error term is now weighted by the weight matrix $W$. If $\lambda = 0$, there is no spatial correlation between the errors. If $\lambda \not = 0$, OLS is unbiased and consistent, but the standard errors will be wrong and the betas will be inefficient.
+
+**Results**
+
+As is shown in the result, at the 5% significance level, four independent variables show significant correlation with our dependent variable, which is the number of overdose cases. The four factors are the number of arrest, the percent of Hispanic residents, the percent of the area zoned as high-density residential and the distance to public safety resources. Except for the distance to public safety resources, which is negatively correlated with the numbers of overdoses cases, other three factors all show positive correlation with the dependent variable. To quantitatively illustrate the correlation, for example, every one-unit increase in the percent of Hispanic residents corresponds to a 0.05% increase in overdose cases, and every one-unit longer distance to public safety resources corresponds to a 0.0003% decrease in overdoses case. While the influence of these indenpendet variables are rather weak as their coefficients are significantly low, compared to the other two influential factors , the percent of the area zoned as high-density residential and the percent of Hispanic resident still have much higher coefficients, which means they have stronger impact on the number of over dose cases. This result is consistent with the OLS model and the spatial lag model. It also affirms most of our hypotheses that census blocks with greater minority population and higher crime rates would have more overdose cases. Discussion of the results that fail to coincide with our hypotheses was presented in the OLS model part and it is also applied in the spatial error model.
+
+Looking at the model fitting effect, the autocorrelation parameter $\lambda$ didn't pass the LM test, which tests
+whether the addition of $\lambda$ significantly improves the model fit. In this case, the p-value is not significant at the 5% level so we can't conclude that the autocorrelation parameter significantly improves the model fit.
+The large negative log likelihood value also indicators a failure of better fit of the regression model. Furthermore, the 0.65 p-value of Wald statistic shows that we have no sufficient evidence to reject the null hypothesis that the parameters of the spatial error model are equal to zero. This suggests that the independent variables we are using to account for the dependent variable in this model didn't produce a good fitting effect, which is consistent with the of results of aforementioned indices.
+
+Normally, a larger log-likelihood and a larger negative AIC indicate better model fits. However, as we compare these two indices between spatial lag model and spatial error model, we find that they basically have the same poor result, which means neither of the models have better model fits.
+
+```{r message=FALSE, warning=FALSE, include=FALSE, results='hide'}
+maricopa_crs <- 'EPSG:2223'
+mesa_dataset<- st_read("D:/MasterStudy/CEGE0097/mesa_complete_data4.geojson")%>%st_transform(st_crs(maricopa_crs))
+all_vars <- c("overdose_count", "arrests_count", "median_income", "perc_black", "perc_hispanic","perc_owners",
+              "resid_high_per","commercial_per", "dist_greenspace", "dist_vacant_prop", "dist_graffiti",
+              "dist_public_safety")
+mesa_all <- mesa_dataset[all_vars]
+mesa.W <- nb2listw(poly2nb(mesa_all))
+options(scipen = 7)
+mesa.err <- errorsarlm(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic + perc_owners + resid_high_per + commercial_per + dist_greenspace + dist_vacant_prop + dist_graffiti + dist_public_safety, data = mesa_all, listw = mesa.W)
+summary(mesa.err)
+```
+
+While we visualise the spatial distribution of residuals(figure?) of the error model, we still see that some level of spatial autocorrelation from the western to the central Mesa city. It suggests that the spatial error model didn't fully account for the spatial dependence in our case.
+
+Furthermore, as we compare the map(figure?), histogram (figure?) and QQ-plot(figure?) with OLS and spatial lag models, it is obvious to see that they are basically identical among these three models. It is another suggestion that the spatial error model poorly accounted for the variance that couldn't be explained in the previous OLS and spatial models, which means the spatial error model is still not a proper option for our regression.
+
+```{r echo=FALSE}
+mesa_all$err_res  <- residuals(mesa.err)
+legend_title <- expression("Spatial Error Model Residuals")
+tm_shape(mesa_all) + tm_fill(col = "err_res", title = legend_title, palette = magma(256), style = "cont") + tm_layout(bg.color = "white")
+```
+
+Figure?: Spatial Distribution of Spatial Error Model Residuals
+
+```{r echo=FALSE}
+ggplot(data=mesa_all, aes(err_res)) + geom_histogram() + ggtitle("Frequency Distribution of Residuals from Spatial Error Model") + 
+  labs(y = "Count of Census Block Groups", x = "Residual Value")+
+  theme_minimal()
+```
+
+Figure?: Histogram of Spatial Error Model Residuals
+
+```{r echo=FALSE}
+ggplot(data=mesa_all, aes(sample=err_res)) + geom_qq() + geom_qq_line() + labs(y = "Sample", x = "Theoretical")
+```
+
+Figure?: QQ-plot of Spatial Error Model Residuals
+
+Thus, at this part, we can conclude that the spatial error model is unable o make significant improvement to the OLS model and spatial lag models. A better regression model should be applied, or more appropriate variables should be added into the model to make better fitting effect.
+
