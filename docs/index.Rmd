@@ -874,7 +874,7 @@ $$
 Y = \rho Wy + X\beta + WX \theta + \epsilon
 $$
 
-The Spatial Durbin Model (SDM) a model that extends from the Spatial Lag Model, that takes account of the spillover effects of both the independent variables and the dependent variable in one model: $Y$ is the vector of observations, $\rho W$ is the scalar autocorrelation parameter and $n∗n$ is the spatial weight matrix that allows neighboring parameters for the dependent variable, $X\beta$ is the $n∗m$ matrix and $n∗1$ estimated parameters of the independent variables respectively. $WX$ creates a weighed sum of independent variables neighboring the location, it is then each multiplied by the $m∗1$ autocorrelation parameter $\theta$. Lastly, the $\epsilon$ is the expected normally distributed errors.
+The Spatial Durbin Model (SDM) a model that extends from the Spatial Lag Model, that takes account of the spillover effects of both the independent variables and the dependent variable in one model (Atikah et al., 2021). $Y$ is the vector of observations, $\rho W$ is the scalar autocorrelation parameter and $n∗n$ is the spatial weight matrix that allows neighboring parameters for the dependent variable, $X\beta$ is the $n∗m$ matrix and $n∗1$ estimated parameters of the independent variables respectively. $WX$ creates a weighed sum of independent variables neighboring the location, it is then each multiplied by the $m∗1$ autocorrelation parameter $\theta$. Lastly, the $\epsilon$ is the expected normally distributed errors.
 
 ### Results
 
@@ -888,7 +888,7 @@ mesa.durbin <- lagsarlm(overdose_count ~ arrests_count + median_income + perc_bl
 summary(mesa.durbin)
 ```
 
-As seen in the results, Rho, the spatial autoregressive term, is 0.019, with a p-value of 0.830, which is similar to the result of the spatial lag model, indicating that it does not necessarily improve fitting the model with the additional $p$. Also comparing, to the spatial lag model, the log-likelihood is higher (-1.071.7 vs -1.076.6), but the AIC coefficient is higher as well (2193.3 vs 2181.2), so whether adding the spatially lagged independent variable effect improves fitting the model is contradictory. Furthermore, the Wald test, another spatial dependence test, has a value of 0.046 with a p-value of 0.831, showing that it is also insignificant. Lastly, for the LM test, which tests residual autocorrelation, the chi-square value is 0.097 with a p-value of 0.755. It indicates that this model does not perform better in accounting for the autocorrelation in the data.
+As seen in the results, Rho, the spatial autoregressive term, is 0.019, with a p-value of 0.830, which is similar to the result of the spatial lag model, indicating that it does not necessarily improve fitting the model with the additional $p$. Also comparing, to the spatial lag model, the log-likelihood is higher (-1.071.7 vs -1.076.6), but the AIC coefficient is higher as well (2193.3 vs 2181.2), so whether adding the spatially lagged independent variable effect improves fitting the model is contradictory since the log-likelihood improved but the AIC coefficient is not because a lower value is preferred (Lee and Ghosh, 2009). Furthermore, the Wald test, another spatial dependence test, has a value of 0.046 with a p-value of 0.831, showing that it is also insignificant. Lastly, for the LM test, which tests residual autocorrelation, the chi-square value is 0.097 with a p-value of 0.755. It indicates that this model does not perform better in accounting for the autocorrelation in the data.
 
 Next, looking at the coefficients of the independent variables as well as the lagged independent variables, only one variable showed statistical significance, with a 5% significance level, being the percentage of land zoned as high-density residential. It has a positive relationship with opioid overdose cases, that a 1% increase in the percentage of land zoned as high-density residential corresponded to a 0.055 increase in opioid overdose cases count in the area. Comparing to the spatial lag model, other 3 significant variables including police incidents, Hispanic population percentage and average distance to public safety are insignificant in the spatial durbin model. 
 
@@ -1328,6 +1328,8 @@ Futhermore, the government should be proactive about interventions in neighborho
 Adams J. F. A. (1889), “Substitutes for opium in chronic diseases”, Boston Medical and Surgical Journal, 121, 15, 351-356.
 
 Arizona Department of Health Services. Opioid Prevention [Internet]. 2022 [cited 2022 Dec 1] Available from: https://www.azdhs.gov/opioid/ 
+ 
+Atikah N., Widodo B., Rahardjo S., Mardlijah, Kholifia N. and Afifah D. L. (2021) "The efficiency of Spatial Durbin Model (SDM) parameters estimation on advertisement tax revenue in Malang City", Journal of Physics: Conference Series, 1821, 012012.
 
 Brinkley-Rubinstein L., A. Macmadu, B. D. L. Marshall, A. Heise, S. I. Ranapurwala, J. D. Rich, T. C. Green (2018) “Risk of fentanyl-involved overdose among those with past year incarceration: Findings from a recent outbreak in 2014 and 2015”, Drug and Alcohol Dependence, 185 (2018), 189-191.
 
@@ -1350,6 +1352,8 @@ Hollingsworth A., C. J. Ruhm and K. Simon (2017) “Macroeconomic conditions and
 Kosten T. R. and T. P. George (2002) “The neurobiology of opioid dependence: Implications for treatment”, Science and Practice Perspectives, 1, 1, 13-20.
 
 Krausz R. M., J. N. Westenberg and K. Ziafat (2021) “The opioid overdose crisis as a global health challenge”, Current Opinion in Psychiatry, 34, 4, 405-412.
+
+Lee Hyeyoung, Ghosh Sujit K. (2009) "Performance of information criteria for spatial models", Journal of Statistical Computation and Simulation, 79, 1, 93-106
 
 Lippold K. M., Jones C. M., Olsen E. O. and Giroir B. P. (2019) “Racial/Ethnic and Age Group Differences in Opioid and Synthetic Opioid-Involved Overdose Deaths Among Adults Aged ≥18 Years in Metropolitan Areas - United States, 2015-2017”,  MMWR Morb Mortal Wkly Rep,  68, 4, 967-73. doi: 10.15585/mmwr.mm6843a3. 
 
