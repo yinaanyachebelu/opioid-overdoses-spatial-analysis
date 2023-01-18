@@ -859,13 +859,12 @@ map + hist + qq
 ***Panel B: Frequency Distribution of Residuals,***
 ***Panel C: QQ Plot***
 
-Thus, at this part, we can conclude that the spatial error model is unable o make significant improvement to the OLS model and spatial lag models. A better regression model should be applied, or more appropriate variables should be added into the model to make better fitting effect.
-
+Thus, at this part, we can conclude that the spatial error model is unable to make significant improvement to the OLS model and spatial lag models. A better regression model should be applied, or more appropriate variables should be added into the model to make better fitting effect.
 
 
 
 ## Spatial Durbin Watson Model
-***By James Tse***
+***By Yik Kien Tse***
 
 ### Methodology
 
@@ -888,10 +887,9 @@ mesa.durbin <- lagsarlm(overdose_count ~ arrests_count + median_income + perc_bl
 summary(mesa.durbin)
 ```
 
-As seen in the results, Rho, the spatial autoregressive term, is 0.019, with a p-value of 0.830, which is similar to the result of the spatial lag model, indicating that it does not necessarily improve fitting the model with the additional $p$. Also comparing, to the spatial lag model, the log-likelihood is higher (-1.071.7 vs -1.076.6), but the AIC coefficient is higher as well (2193.3 vs 2181.2), so whether adding the spatially lagged independent variable effect improves fitting the model is contradictory since the log-likelihood improved but the AIC coefficient is not because a lower value is preferred (Lee and Ghosh, 2009). Furthermore, the Wald test, another spatial dependence test, has a value of 0.046 with a p-value of 0.831, showing that it is also insignificant. Lastly, for the LM test, which tests residual autocorrelation, the chi-square value is 0.097 with a p-value of 0.755. It indicates that this model does not perform better in accounting for the autocorrelation in the data.
+As seen in the results, Rho, the spatial autoregressive term, is 0.019, with an insignificant p-value of 0.830, which is similar to the result of the spatial lag model, indicating that it does not necessarily improve fitting the model with the additional $p$. Also comparing, to the spatial lag model, the log-likelihood is higher (-1.071.7 vs -1.076.6), but the AIC coefficient is higher as well (2193.3 vs 2181.2), so whether adding the spatially lagged independent variable effect improves fitting the model is contradictory since the log-likelihood improved but the AIC coefficient is not because a lower value is preferred (Lee and Ghosh, 2009). Furthermore, the Wald test, another spatial dependence test, has a value of 0.046 with a p-value of 0.831, showing that it is also insignificant. Lastly, for the LM test, which tests residual autocorrelation, the chi-square value is 0.097 with a p-value of 0.755. It indicates that this model does not perform better in accounting for the autocorrelation in the data, and the residual is not fully accounted for in the SDM.
 
-Next, looking at the coefficients of the independent variables as well as the lagged independent variables, only one variable showed statistical significance, with a 5% significance level, being the percentage of land zoned as high-density residential. It has a positive relationship with opioid overdose cases, that a 1% increase in the percentage of land zoned as high-density residential corresponded to a 0.055 increase in opioid overdose cases count in the area. Comparing to the spatial lag model, other 3 significant variables including police incidents, Hispanic population percentage and average distance to public safety are insignificant in the spatial durbin model. 
-
+Next, looking at the coefficients of the independent variables as well as the lagged independent variables, only one variable showed statistical significance, with a 5% significance level, being the percentage of land zoned as high-density residential. It has a positive relationship with opioid overdose cases, that a 1% increase in the percentage of land zoned as high-density residential corresponded to a 0.055 increase in opioid overdose cases count in the area. Comparing to the spatial lag model, other 3 significant variables including police incidents, Hispanic population percentage and average distance to public safety are insignificant in the spatial durbin model. SDM generally does not show positive feedback to our hypothesis other than affirming the positve relationship of opioid overdose cases and proximity to high-density residential.
 
 ```{r fig.height=4, fig.width=9, results='hide', message=FALSE, warning=FALSE}
 mesa_data$mesa.res <- residuals(mesa.durbin)
@@ -917,7 +915,7 @@ map + hist + qq
 ***Panel C: QQ Plot***
 
 
-Similar to the spatial lag model, the plotting of the residuals of the spatial durbin model shows they need to be accounted for in the model since the residuals are almost identical to those of the linear OLS regression and the spatial lag model. Therefore, the spatially lagged dependent variable with the spatially lagged independent variables in the spatial durbin model cannot fully explain the opioid overdose data in Mesa. Other spatial regression models may show a better fit in this case.
+Similar to the spatial lag model and spatial error model, the plotting of the residuals of the spatial durbin model shows they need to be accounted for in the model since the residuals are almost identical to those of the linear OLS regression and the spatial lag model. Therefore, the spatially lagged dependent variable with the spatially lagged independent variables in the spatial durbin model cannot fully explain the opioid overdose data with the independent variables in Mesa. Other spatial regression models are preferred in order to show a better fit in this case.
 
 
 
