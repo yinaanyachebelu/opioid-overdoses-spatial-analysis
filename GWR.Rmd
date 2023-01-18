@@ -1,0 +1,158 @@
+```{r message=FALSE, warning=FALSE, include=FALSE, results='hide'}
+
+library(sf)
+library(sp)
+library(tmap)
+library(RColorBrewer)
+library(ggplot2)
+library(spdep)
+library(spatialreg)
+library(viridis)
+library(rgeos)
+library(rgdal)
+library(spgwr)
+library(GWmodel)
+library(tmap)
+library(tmaptools)
+library(osmdata)
+library(grid)
+library(gridExtra)
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE, results='hide'}
+maricopa_crs <- 'EPSG:2223'
+mesa_data <- read_sf("mesa_complete_data4.geojson")%>%st_transform(st_crs(maricopa_crs))
+
+all_vars <- c("overdose_count", "arrests_count", "median_income", "perc_black", 
+              "perc_hispanic","perc_owners","resid_high_per","commercial_per", "dist_greenspace", 
+              "dist_vacant_prop", "dist_graffiti","dist_public_safety")
+
+mesa_a <- mesa_data[all_vars]
+
+mesa.W <- nb2listw(poly2nb(mesa_a))
+options(scipen = 7)
+```
+
+
+
+# Methodology
+Geographically weighted regression (GWR) is a method for analyzing spatially varying relationships (C. Brunsdon, Fotheringham, and Charlton 1998). It is an extension of linear regression that allows to vary across space (Brunsdson et al., 1998). The general form of the model is:
+
+$y_i=\beta_{i0}+ \sum_{p=1}^m \beta_{ip} x_{ip}+ \epsilon_i$
+
+where $\beta_{i0}$ us the intercept term at location i, i= 1,2,....,N; Nis the number of spatial locations; $\beta_{ip}$ is the value of the pth parameter at location i,p= 1,2,...,m; m is the number of independent variables; $\epsilon_i$ is a random error.
+
+We first obtain the centroid points and their coordinates for all district polygons
+
+```{r message=FALSE, warning=FALSE, include=FALSE, results='hide'}
+st_c <- st_coordinates
+st_coid <- st_centroid
+mesa.c <- st_c(st_coid(mesa_a))
+
+DM <- gw.dist(dp.locat=coordinates(mesa.c))
+mesa_a$long <- mesa.c[,1]
+mesa_a$lat <- mesa.c[,2]
+
+mesa_a <- as(mesa_a, 'Spatial')
+```
+
+Choice of bandwidth affects the results of GWR so it is important to select a reasonable value. In the spgwr package, the ‘optimal’ bandwidth can be estimated using the gwr.sel function. This function uses a method called leave-one-out cross-validation (LOO-CV) to find the bandwidth that results in the smallest error.
+
+```{r message=FALSE, warning=FALSE, include=FALSE, results='hide'}
+bwG <- gwr.sel(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic + perc_owners + resid_high_per + commercial_per + dist_greenspace + dist_vacant_prop + dist_graffiti + dist_public_safety, data = mesa_a, coords = cbind(mesa_a$long, mesa_a$lat), gweight = gwr.Gauss, verbose = FALSE, longlat = FALSE)
+```
+
+```{r message=FALSE, warning=FALSE}
+bwG
+```
+
+
+
+With the acquired bandwidth, we can fit GWR model - 
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE, results='hide'}
+gwrG <- gwr(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic + perc_owners + resid_high_per + commercial_per + dist_greenspace + dist_vacant_prop + dist_graffiti + dist_public_safety, data = mesa_a, , coords = cbind(mesa_a$long, mesa_a$lat), bandwidth = bwG, gweight = gwr.Gauss, hatmatrix = TRUE, longlat=FALSE)
+```
+```{r message=FALSE, warning=FALSE}
+gwrG
+```
+
+
+
+# Results
+
+Firstly, we notice that the fixed bandwidth that needs to be used is decided to be 39346.39 and is assumed to be appropriate to model the variation in all of the model coefficients across the entire study area.
+
+The output of the GWR model shows that the Quasi-global R-squared value of 0.36, meaning it is only able to explain around 36% of the variation in the dependent variable.
+
+
+
+```{r message=FALSE, warning=FALSE}
+gwr.morantest(gwrG, mesa.W)
+```
+
+To check the residuals for autocorrelation, we use the Moran's I from the spgwr package. The p-value of 0.2914 is highly significant and reveals that significant auto correlations remain and that GWR model is unable to fully account for the autocorrelation in the opiod overdose incidents.
+
+
+Figure ?: GWR Coefficient Estimates for Independent Variables
+
+By mapping each of the varying coefficient estimates, we can examine these statistical values change spatially. 
+
+```{r message=FALSE, warning=FALSE, include=FALSE, results='hide'}
+
+my.palette <- brewer.pal(n = 9, name = "Reds")
+
+
+mesa_a$coef_arrests_count<-gwrG$SDF$arrests_count
+mesa_a$coef_perc_black<-gwrG$SDF$perc_black
+mesa_a$coef_perc_hispanic<-gwrG$SDF$perc_hispanic
+mesa_a$coef_dist_public_safety<-gwrG$SDF$dist_public_safety
+mesa_a$coef_resid_high_per<-gwrG$SDF$resid_high_per
+mesa_a$coef_dist_greenspace<-gwrG$SDF$dist_greenspace
+mesa_a$coef_median_income<-gwrG$SDF$median_income
+mesa_a$coef_perc_owners<-gwrG$SDF$perc_owners
+mesa_a$coef_commercial_per<-gwrG$SDF$commercial_per
+mesa_a$coef_dist_vacant_prop<-gwrG$SDF$dist_vacant_prop
+mesa_a$coef_dist_graffiti<-gwrG$SDF$dist_graffiti
+mesa_a$coef_Intercept<-gwrG$SDF$Intercept
+
+coef_arrest_count<-spplot(mesa_a,"coef_arrests_count", main=list(label=" Arrests ", cex=1),
+                          col="transparent",col.regions = my.palette, cuts = 7)
+
+
+coef_perc_hispanic<-spplot(mesa_a,"coef_perc_hispanic", main=list(label="Hispanic %", cex=1), 
+                           col="transparent",col.regions = my.palette, cuts = 7)
+
+coef_perc_black<-spplot(mesa_a,"coef_perc_black", main=list(label=" Black % ", cex=1), 
+                        col="transparent",col.regions = my.palette, cuts = 7)
+
+coef_resid_high_per<-spplot(mesa_a,"coef_resid_high_per", main=list(label="High Dens. Residential", cex=1), 
+                            col="transparent", col.regions = my.palette, cuts = 7)
+
+coef_dist_greenspace<-spplot(mesa_a,"coef_dist_greenspace", main=list(label="Dist to Greenspace", cex=1), 
+                             col="transparent", col.regions = my.palette, cuts = 7)
+
+coef_dist_public_safety<-spplot(mesa_a,"coef_dist_public_safety", main=list(label="Dist to Public Safety", cex=1),
+                                col="transparent", col.regions = my.palette, cuts = 7)
+
+coef_median_income<-spplot(mesa_a,"coef_median_income", main=list(label="Median Income", cex=1), 
+                           col="transparent", col.regions = my.palette, cuts = 5)
+
+coef_perc_owners<-spplot(mesa_a,"coef_perc_owners", main=list(label=" Homeowner % ", cex=1),
+                         col="transparent", col.regions = my.palette, cuts = 7)
+
+coef_commercial_per<-spplot(mesa_a,"coef_commercial_per", main=list(label="Commercial %", cex=1),
+                            col="transparent", col.regions = my.palette, cuts = 7)
+
+coef_dist_vacant_prop<-spplot(mesa_a,"coef_dist_vacant_prop", main=list(label="Dist to Vacant Prop.", cex=1), 
+                              col="transparent", col.regions = my.palette, cuts = 7)
+
+coef_dist_graffiti<-spplot(mesa_a,"coef_dist_graffiti", main=list(label="Dist to Graffiti", cex=1),
+                           col="transparent", col.regions = my.palette, cuts = 7)
+
+```
+
+```{r echo=FALSE, fig.height=6, fig.width=9}
+grid.arrange(coef_arrest_count, coef_perc_hispanic, coef_perc_black, coef_resid_high_per, coef_dist_greenspace, coef_dist_public_safety, coef_median_income, coef_perc_owners, coef_commercial_per, coef_dist_vacant_prop, coef_dist_graffiti, top = textGrob("GWR Coefficient Estimates", gp=gpar(fontsize=20)))
+```
