@@ -811,7 +811,7 @@ Therefore, the final spatial error model can be specified as:
 $y = X \beta + \lambda W \epsilon + \xi$
 
 Same to the OLS model, $y$ is an $n *1$ vector of independent variable;$X$ is an $n *m$ matrix of independent variables; $\beta$ is an $m *1$ vector of parameters to be estimated.
-In the OLS regression we estimate a single error term, $\epsilon$. While in a spatial error model, we split this error into random error and spatially structured error. Here, random error (unexplained by our model) is $\xi$, independent identically distributed (i.i.d.) errors. Spatially structured error is composed of the the spatial error parameter $\lambda$, and the original $\epsilon$ error term is now weighted by the weight matrix $W$. If $\lambda = 0$, there is no spatial correlation between the errors. If $\lambda \not = 0$, OLS is unbiased and consistent, but the standard errors will be wrong and the betas will be inefficient.
+In the OLS regression we estimate a single error term, $\epsilon$. While in a spatial error model, we split this error into random error and spatially structured error. Here, random error (unexplained by our model) is $\xi$, independent identically distributed (i.i.d.) errors. Spatially structured error is composed of the the spatial error parameter $\lambda$, and the original $\epsilon$ error term is now weighted by the weight matrix $W$. If $\lambda = 0$, there is no spatial correlation between the errors. If $\lambda \not = 0$, OLS is unbiased and consistent, but the standard errors will be wrong and the betas will be inefficient(Emily Burchfield, 2020).
 
 
 ### Results
@@ -1327,7 +1327,7 @@ Futhermore, the government should be proactive about interventions in neighborho
 
 Adams J. F. A. (1889), “Substitutes for opium in chronic diseases”, Boston Medical and Surgical Journal, 121, 15, 351-356.
 
-Arizona Department of Health Services. (2022) Opioid Prevention [Online]. Available at: https://www.azdhs.gov/opioid/ (Accessed: 1 December 2022)
+Arizona Department of Health Services. Opioid Prevention [Internet]. 2022 [cited 2022 Dec 1] Available from: https://www.azdhs.gov/opioid/ 
 
 Brinkley-Rubinstein L., A. Macmadu, B. D. L. Marshall, A. Heise, S. I. Ranapurwala, J. D. Rich, T. C. Green (2018) “Risk of fentanyl-involved overdose among those with past year incarceration: Findings from a recent outbreak in 2014 and 2015”, Drug and Alcohol Dependence, 185 (2018), 189-191.
 
@@ -1361,7 +1361,7 @@ Marshall J. R. S. F. Gassner, C. L. Anderson, R. J. Cooper, S. Lotfipour and B. 
 
 Montandon G. and A. S. Slutsky (2019), “Solving the opioid crisis; Respiratory depression by opioids as critical end point”, Chest, 156, 4, 653-658.
 
-Office of Governor Ducey. (2017) Governor Ducey Declares Statewide Health Emergency In Opioid Epidemic [Online]. Available at: https://azgovernor.gov/governor/news/2017/06/governor-ducey-declares-statewide-health-emergency-opioid-epidemic (Accessed: 1 December 2022)
+Office of Governor Ducey. Governor Ducey Declares Statewide Health Emergency In Opioid Epidemic [Internet]. 2017 [cited 2022 Dec 1] Available from: https://azgovernor.gov/governor/news/2017/06/governor-ducey-declares-statewide-health-emergency-opioid-epidemic
 
 Poliart, A., Kirakoya-Samadoulougou, F., Ouédraogo, M. (et al. (2021), "Using geographically weighted Poisson regression to examine the association between socioeconomic factors and hysterectomy incidence in Wallonia, Belgium." BMC Women's Health 21, 373. 
 
@@ -1369,10 +1369,12 @@ Rosenblum A., L. A. Marsch, H. Joseph and R. K. Portenoy (2008), Opioids and the
 
 Rosner B., J. Neicun, J. C. Yang and A. Roman-Urrestarazu (2019) “Opioid prescription patterns in Germany and the global opioid epidemic: Systematic review of available evidence”, PLoS One, 14, 8, 1-20.
 
-Steif, Ken. (2021) Public Policy Analytics: Code & Context for Data Science in Government. [online]. Available at: https://urbanspatial.github.io/PublicPolicyAnalytics/index.html (Accessed: 1 December 2022)
+Steif, Ken. Public Policy Analytics: Code & Context for Data Science in Government [Internet]. 2021.[cited 2022 Dec 1] Available from: https://urbanspatial.github.io/PublicPolicyAnalytics/index.html
 
 Ward M. and K. Gleditsch (2008), Spatial Regression Models, SAGE Publications.
 
 Waldhoer M., S. E. Bartlett and J. L. Whistler (2004) “Opioid receptors”, Annual Review of Biochemistry, 73 (2004), 953-990. 
 
 Zuur A. F., E. N. Leno and G. M. Smith (2007) Analysing Ecological Data: Statistics for Biology and Health, Springer: New York.
+
+Emily Burchfield. Spatial Regression [Internet]. 2020 [cited 2023 Jan 16]. Available from: https://www.emilyburchfield.org/courses/gsa/spatial_regression_lab
