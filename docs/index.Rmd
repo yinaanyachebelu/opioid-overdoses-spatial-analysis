@@ -55,6 +55,7 @@ library(leaflet)
 library(rgdal)
 library(mgcv)
 library(pander)
+library(r2symbols)
 
 options(scipen=999)
 ```
@@ -441,7 +442,7 @@ moran.plot(mesa_dataset$overdose_count, mesa_weights,
 
 We map the various clusters to examine the spatial distribution of the autocorrelation. The result shows that in most of the city the autocorrelation is not significant. However, there is significant high-high autocorrelation in the west and center of the city. There is one case of low-low autocorrelation in the northeast of the city.
 
-```{r local_auto, fig.height = 5, fig.width=5, results='hide', message=FALSE, warning=FALSE}
+```{r local_auto, fig.height = 3.5, fig.width=3.5, results='hide', message=FALSE, warning=FALSE}
 
 # Morans Clusters
 moranCluster <- function(shape, W, var, alpha=0.05)
@@ -648,7 +649,7 @@ preg <- glm(overdose_count ~ arrests_count + median_income + perc_black + perc_h
 summary(preg)
 ```
 
-The Moran’s correlation test was conducted to check for residual spatial dependence of both models. 
+The Moran’s correlation test was conducted to check for residual spatial dependence. Below are the results for the OLS model and the Poisson model respectively. 
 As seen below, the test resulted in a Moran’s I of 0.014 and 0.0068 respectively with corresponding Moran I statistics that were not significant on the 5% level. As a result, we cannot retain the null hypothesis that there is no spatial clustering of the residuals.
 
 
@@ -662,7 +663,7 @@ lm.morantest(preg, mesa_weights, zero.policy=TRUE)
 Although we cannot reject the null hypothesis based of our Moran correlation test results, an examination of the residuals of the OLS model (below), shows that their distribution appear to be non-random with large positive residuals in the west and center of the city.  The poisson model has residual values of smaller magnitude which are more evenly spread out spatially. However, there still seems to be some clustering of positive residuals in the west and center of the city. For this reason, we proceed with spatial regression models.
 
 
-```{r fig.height=4, fig.width=7,results='hide', message=FALSE, warning=FALSE}
+```{r fig.height=2.5, fig.width=6,results='hide', message=FALSE, warning=FALSE}
 mesa_all$res_m1 <- residuals(reg)
 
 legend_title = expression("OLS model residuals") 
@@ -677,6 +678,9 @@ tm_fill(col = "res_m2", title = legend_title, palette = magma(256), style = "con
 tmap_arrange(map_mesa_res, map_mesa_res2)
 ```
 
+
+
+
 ## Spatial Lag Model
 ***By Humza Hussain***
 
@@ -686,7 +690,7 @@ tmap_arrange(map_mesa_res, map_mesa_res2)
 
 The residual values from the OLS regression were observed to see whether any significant autocorrelation existed in these values. In the map above, there do seem to be significant clusters of positive residuals to the west of the city. While this histogram of residuals shows that an approximately normally distribution on the most part (figure ?), outliers to the positive side of the spectrum lead to deviation at the right tail. This is further evidenced by deviation at the right tail of the QQ-plot (figure ?).
 
-```{r fig.height=5, fig.width=9,results='hide', message=FALSE, warning=FALSE}
+```{r fig.height=3, fig.width=7,results='hide', message=FALSE, warning=FALSE}
 
 mesa_all$lm_res  <- residuals(reg)
 
@@ -704,6 +708,7 @@ hist + qq
 The results of the OLS model point to key assumptions of linear regression being violated, most notably the assumption that residuals are independent and not spatially autocorrelated. We attempt to integrate a spatial lag model as one of the spatial regression models to account for spatial autocorrelation in our data. 
 
 The spatial lag model assumes that autocorrelation is present in the dependent variable, that being opioid overdose cases. It assumes that the dependant variable is correlated with the same variable at nearby locations, above and beyond other covariates (Ward and Gleditsch 2008).
+
 
 #### Spatial Lag Model
 
@@ -787,12 +792,76 @@ map + hist + qq
 All in all, these observations indicate that there is insufficient evidence to reject the null hypothesis. Therefore, we cannot say with confidence that the dependent variable (opioid overdoses) is correlated with the same variable at nearby locations. Different spatial regression models may better explain the spatial autocorrelation observed from the exploratory spatial data analysis.
 
 
+
+
+
 ## Spatial Error Model
-***By ____***
+***By Yiru Xu***
 
 ### Methodology
 
+The spatial error model assumes autocorrelation is a result of some unobserved variable(s) and is present in the residuals of the model, which means that it assume that only the error terms in the regression are correlated. The basic form of the model is as follows:
+
+$y = X\beta+\epsilon$
+
+$\epsilon = \lambda W \epsilon + \xi$
+
+Therefore, the final spatial error model can be specified as:
+
+$y = X \beta + \lambda W \epsilon + \xi$
+
+Same to the OLS model, $y$ is an $n *1$ vector of independent variable;$X$ is an $n *m$ matrix of independent variables; $\beta$ is an $m *1$ vector of parameters to be estimated.
+In the OLS regression we estimate a single error term, $\epsilon$. While in a spatial error model, we split this error into random error and spatially structured error. Here, random error (unexplained by our model) is $\xi$, independent identically distributed (i.i.d.) errors. Spatially structured error is composed of the the spatial error parameter $\lambda$, and the original $\epsilon$ error term is now weighted by the weight matrix $W$. If $\lambda = 0$, there is no spatial correlation between the errors. If $\lambda \not = 0$, OLS is unbiased and consistent, but the standard errors will be wrong and the betas will be inefficient.
+
+
 ### Results
+
+The results of the Spatial Error Model are below.
+
+```{r message=FALSE, warning=FALSE}
+mesa.W <- nb2listw(poly2nb(mesa_all))
+mesa.err <- errorsarlm(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic + perc_owners + resid_high_per + commercial_per + dist_greenspace + dist_vacant_prop + dist_graffiti + dist_public_safety, data = mesa_all, listw = mesa.W)
+summary(mesa.err)
+```
+
+As is shown in the result, at the 5% significance level, four independent variables show significant correlation with our dependent variable, which is the number of overdose cases. The four factors are the number of arrest, the percent of Hispanic residents, the percent of the area zoned as high-density residential and the distance to public safety resources. Except for the distance to public safety resources, which is negatively correlated with the numbers of overdoses cases, other three factors all show positive correlation with the dependent variable. To quantitatively illustrate the correlation, for example, every one-unit increase in the percent of Hispanic residents corresponds to a 0.05% increase in overdose cases, and every one-unit longer distance to public safety resources corresponds to a 0.0003% decrease in overdoses case. While the influence of these indenpendet variables are rather weak as their coefficients are significantly low, compared to the other two influential factors , the percent of the area zoned as high-density residential and the percent of Hispanic resident still have much higher coefficients, which means they have stronger impact on the number of over dose cases. This result is consistent with the OLS model and the spatial lag model. It also affirms most of our hypotheses that census blocks with greater minority population and higher crime rates would have more overdose cases. Discussion of the results that fail to coincide with our hypotheses was presented in the OLS model part and it is also applied in the spatial error model.
+
+Looking at the model fitting effect, the autocorrelation parameter $\lambda$ didn't pass the LM test, which tests
+whether the addition of $\lambda$ significantly improves the model fit. In this case, the p-value is not significant at the 5% level so we can't conclude that the autocorrelation parameter significantly improves the model fit.
+The large negative log likelihood value also indicators a failure of better fit of the regression model. Furthermore, the 0.65 p-value of Wald statistic shows that we have no sufficient evidence to reject the null hypothesis that the parameters of the spatial error model are equal to zero. This suggests that the independent variables we are using to account for the dependent variable in this model didn't produce a good fitting effect, which is consistent with the of results of aforementioned indices.
+
+Normally, a larger log-likelihood and a larger negative AIC indicate better model fits. However, as we compare these two indices between spatial lag model and spatial error model, we find that they basically have the same poor result, which means neither of the models have better model fits.
+
+While we visualise the spatial distribution of residuals (figure?) of the error model, we still see that some level of spatial autocorrelation from the western to the central Mesa city. It suggests that the spatial error model didn't fully account for the spatial dependence in our case.
+
+Furthermore, as we compare the map(figure?), histogram (figure?) and QQ-plot(figure?) with OLS and spatial lag models, it is obvious to see that they are basically identical among these three models. It is another suggestion that the spatial error model poorly accounted for the variance that couldn't be explained in the previous OLS and spatial models, which means the spatial error model is still not a proper option for our regression.
+
+```{r fig.height=4, fig.width=9, results='hide', message=FALSE, warning=FALSE}
+mesa_all <- mesa_dataset[all_vars]
+mesa_all$err_res  <- residuals(mesa.err)
+
+map <- ggplot(data = mesa_all) +
+  geom_sf(aes(fill = err_res)) +
+  ggtitle(label = "Panel A")+scale_fill_viridis_c(option = "magma")+theme_minimal()+theme(axis.text = element_blank(), axis.ticks = element_blank())
+          
+hist <- ggplot(data=mesa_all, aes(err_res)) + geom_histogram() + ggtitle("Panel B") + 
+  labs(y = "Count", x = "Residual Value")+
+  theme_minimal()
+
+qq<-ggplot(data=mesa_all, aes(sample=err_res)) + geom_qq() + geom_qq_line() + labs(y = "Sample", x = "Theoretical") +ggtitle(label = "Panel C")
+
+map + hist + qq
+
+```
+
+***Figure ?: Spatial Error Model Residuals***
+***Panel A: Spatial Distribution of Residuals,***
+***Panel B: Frequency Distribution of Residuals,***
+***Panel C: QQ Plot***
+
+Thus, at this part, we can conclude that the spatial error model is unable o make significant improvement to the OLS model and spatial lag models. A better regression model should be applied, or more appropriate variables should be added into the model to make better fitting effect.
+
+
 
 
 ## Spatial Durbin Watson Model
@@ -812,6 +881,7 @@ The Spatial Durbin Model (SDM) a model that extends from the Spatial Lag Model, 
 The results of the Spatial Durbin model are shown below.
 
 ```{r message=FALSE, warning=FALSE}
+mesa_all <- mesa_dataset[all_vars]
 mesa_data <- mesa_all
 mesa.W <- nb2listw(poly2nb(mesa_data))
 mesa.durbin <- lagsarlm(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic + perc_owners + resid_high_per + commercial_per + dist_greenspace + dist_vacant_prop + dist_graffiti + dist_public_safety, data = mesa_data, listw = mesa.W, type="mixed")
@@ -841,7 +911,7 @@ map + hist + qq
 
 ```
 
-***Figure ?: Spatial Lag Model Residuals***
+***Figure ?: Spatial Durbin Model Residuals***
 ***Panel A: Spatial Distribution of Residuals,***
 ***Panel B: Frequency Distribution of Residuals,***
 ***Panel C: QQ Plot***
@@ -853,11 +923,118 @@ Similar to the spatial lag model, the plotting of the residuals of the spatial d
 
 ## Geographically Weighted Regression
 
-***By _____***
+***By Girish Joijode***
 
 ### Methodology
 
+```{r message=FALSE, warning=FALSE, include=FALSE, results='hide'}
+mesa_a <- mesa_data[all_vars]
+
+mesa.W <- nb2listw(poly2nb(mesa_a))
+options(scipen = 7)
+```
+
+Geographically weighted regression (GWR) is a method for analyzing spatially varying relationships (C. Brunsdon, Fotheringham, and Charlton 1998). It is an extension of linear regression that allows to vary across space (Brunsdson et al., 1998). The general form of the model is:
+
+$y_i=\beta_{i0}+ \sum_{p=1}^m \beta_{ip} x_{ip}+ \epsilon_i$
+
+where $\beta_{i0}$ us the intercept term at location i, i= 1,2,....,N; Nis the number of spatial locations; $\beta_{ip}$ is the value of the pth parameter at location i,p= 1,2,...,m; m is the number of independent variables; $\epsilon_i$ is a random error.
+
+```{r message=FALSE, warning=FALSE, include=FALSE, results='hide'}
+st_c <- st_coordinates
+st_coid <- st_centroid
+mesa.c <- st_c(st_coid(mesa_a))
+
+DM <- gw.dist(dp.locat=coordinates(mesa.c))
+mesa_a$long <- mesa.c[,1]
+mesa_a$lat <- mesa.c[,2]
+
+mesa_a <- as(mesa_a, 'Spatial')
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE, results='hide'}
+bwG <- gwr.sel(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic + perc_owners + resid_high_per + commercial_per + dist_greenspace + dist_vacant_prop + dist_graffiti + dist_public_safety, data = mesa_a, coords = cbind(mesa_a$long, mesa_a$lat), gweight = gwr.Gauss, verbose = FALSE, longlat = FALSE)
+```
+
+ First, we first obtain the centroid points and their coordinates for all district polygons. Choice of bandwidth affects the results of GWR so it is important to select a reasonable value. In the spgwr package, the ‘optimal’ bandwidth can be estimated using the gwr.sel function. This function uses a method called leave-one-out cross-validation (LOO-CV) to find the bandwidth that results in the smallest error. With the acquired bandwidth of `bwG` we can fit GWR model.
+ 
 ### Results
+
+The results of the Geographically Weighted Regression is shown below. 
+
+```{r message=FALSE, warning=FALSE}
+gwrG <- gwr(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic + perc_owners + resid_high_per + commercial_per + dist_greenspace + dist_vacant_prop + dist_graffiti + dist_public_safety, data = mesa_a, , coords = cbind(mesa_a$long, mesa_a$lat), bandwidth = bwG, gweight = gwr.Gauss, hatmatrix = TRUE, longlat=FALSE)
+gwrG
+```
+
+The output of the GWR model shows that the Quasi-global R-squared value of 0.36, meaning it is only able to explain around 36% of the variation in the dependent variable.
+
+```{r message=FALSE, warning=FALSE}
+gwr.morantest(gwrG, mesa.W)
+```
+
+To check the residuals for autocorrelation, we use the Moran's I. The p-value of 0.2914 is not significant at the 5% level revealing that we cannot reject the null hypothesis that there is no spatial autcorrelation. This means that the GWR is able to account for the spatial autocorrelation in the opiod overdose incidents.
+
+By mapping each of the varying coefficient estimates, we can examine these statistical values change spatially. 
+
+```{r message=FALSE, warning=FALSE, include=FALSE, results='hide'}
+
+my.palette <- brewer.pal(n = 9, name = "Reds")
+
+
+mesa_a$coef_arrests_count<-gwrG$SDF$arrests_count
+mesa_a$coef_perc_black<-gwrG$SDF$perc_black
+mesa_a$coef_perc_hispanic<-gwrG$SDF$perc_hispanic
+mesa_a$coef_dist_public_safety<-gwrG$SDF$dist_public_safety
+mesa_a$coef_resid_high_per<-gwrG$SDF$resid_high_per
+mesa_a$coef_dist_greenspace<-gwrG$SDF$dist_greenspace
+mesa_a$coef_median_income<-gwrG$SDF$median_income
+mesa_a$coef_perc_owners<-gwrG$SDF$perc_owners
+mesa_a$coef_commercial_per<-gwrG$SDF$commercial_per
+mesa_a$coef_dist_vacant_prop<-gwrG$SDF$dist_vacant_prop
+mesa_a$coef_dist_graffiti<-gwrG$SDF$dist_graffiti
+mesa_a$coef_Intercept<-gwrG$SDF$Intercept
+
+coef_arrest_count<-spplot(mesa_a,"coef_arrests_count", main=list(label=" Arrests ", cex=1),
+                          col="transparent",col.regions = my.palette, cuts = 7)
+
+
+coef_perc_hispanic<-spplot(mesa_a,"coef_perc_hispanic", main=list(label="Hispanic %", cex=1), 
+                           col="transparent",col.regions = my.palette, cuts = 7)
+
+coef_perc_black<-spplot(mesa_a,"coef_perc_black", main=list(label=" Black % ", cex=1), 
+                        col="transparent",col.regions = my.palette, cuts = 7)
+
+coef_resid_high_per<-spplot(mesa_a,"coef_resid_high_per", main=list(label="High Dens. Residential", cex=1), 
+                            col="transparent", col.regions = my.palette, cuts = 7)
+
+coef_dist_greenspace<-spplot(mesa_a,"coef_dist_greenspace", main=list(label="Dist to Greenspace", cex=1), 
+                             col="transparent", col.regions = my.palette, cuts = 7)
+
+coef_dist_public_safety<-spplot(mesa_a,"coef_dist_public_safety", main=list(label="Dist to Public Safety", cex=1),
+                                col="transparent", col.regions = my.palette, cuts = 7)
+
+coef_median_income<-spplot(mesa_a,"coef_median_income", main=list(label="Median Income", cex=1), 
+                           col="transparent", col.regions = my.palette, cuts = 5)
+
+coef_perc_owners<-spplot(mesa_a,"coef_perc_owners", main=list(label=" Homeowner % ", cex=1),
+                         col="transparent", col.regions = my.palette, cuts = 7)
+
+coef_commercial_per<-spplot(mesa_a,"coef_commercial_per", main=list(label="Commercial %", cex=1),
+                            col="transparent", col.regions = my.palette, cuts = 7)
+
+coef_dist_vacant_prop<-spplot(mesa_a,"coef_dist_vacant_prop", main=list(label="Dist to Vacant Prop.", cex=1), 
+                              col="transparent", col.regions = my.palette, cuts = 7)
+
+coef_dist_graffiti<-spplot(mesa_a,"coef_dist_graffiti", main=list(label="Dist to Graffiti", cex=1),
+                           col="transparent", col.regions = my.palette, cuts = 7)
+
+```
+
+```{r echo=FALSE, fig.height=6, fig.width=9}
+grid.arrange(coef_arrest_count, coef_perc_hispanic, coef_perc_black, coef_resid_high_per, coef_dist_greenspace, coef_dist_public_safety, coef_median_income, coef_perc_owners, coef_commercial_per, coef_dist_vacant_prop, coef_dist_graffiti, top = textGrob("GWR Coefficient Estimates", gp=gpar(fontsize=20)))
+```
+
 
 
 ## Geographically Weighted Poisson Regression
@@ -885,7 +1062,7 @@ The spatial weight $w_{ij}$ allows for census block groups closer to the $i$th c
 
 The corresponding weight matrices are calculated as follows
 
-Gaussian: $w_{i j}=\exp \left(-\frac{1}{2}\left(\frac{d_{i j}}{b}\right)^2\right)$     and    Exponential: $w_{i j}=\exp \left(-\frac{\left|d_{i j}\right|}{b}\right)$
+Gaussian: $w_{i j}=\exp \left(-\frac{1}{2}\left(\frac{d_{i j}}{b}\right)^2\right)$     and      Exponential: $w_{i j}=\exp \left(-\frac{\left|d_{i j}\right|}{b}\right)$
 
 where $h$ is the kernel bandwidth and $d_{ij}$ is the distance between points i and j (Gollini et al., 2013). 
 
@@ -1068,7 +1245,7 @@ bgwr.Pr
 
 Given that the magnitude of the coefficients is very small, it is useful to examine the test statistics to investigate how the statistical significance of these values change spatially. Below are maps of the pseudo t-values for each of the risk factors. 
 
-From the results, we observe that the number of arrests is almost always statistically significant in all regions, but it is especially significant in the northeast, southeast and western-central areas of the city. Additionally, the hispanic population is increasingly significant closer to the center of the city while the black population is significant in the far west of the city. Distance to greenspace has a significant negative relationship with overdose incidents in the west of the city while distance to public safety has a significnat negative relationship with overdose cases in the east of the city. However, it is important to note when interpreting these results that thes are municipal-run facilities, so for example, our model is only taking into consideration city-owned parks are not accounting for private greenspace which might be available in other areas. Unsurprisingly, land zoned being zoned commercial is only significant in the east of the city which is reasonable as that is farther from the western downtown area where most of the neighborhoods would be zoned as commercial. On the other hand, distance to vacant property is positively statistically significant in the center of the city but negatively statistically significant in the in the southeast. Similarly, median income is positively significant near the downtown area and central-east, but there are enclaves of blocks where the relationship is negative. Finally, homeownership is mainly statistically significant in the northwest of the city. 
+From the results, we observe that the number of arrests is almost always statistically significant in all regions, but it is especially significant in the northeast, southeast and western-central areas of the city. Additionally, the hispanic population is increasingly significant closer to the center of the city while the black population is significant in the far west of the city. Distance to greenspace has a significant negative relationship with overdose incidents in the west of the city while distance to public safety has a significant negative relationship with overdose cases in the east of the city. However, it is important to note when interpreting these results that thes are municipal-run facilities, so for example, our model is only taking into consideration city-owned parks are not accounting for private greenspace which might be available in other areas. Unsurprisingly, land zoned being zoned commercial is only significant in the east of the city which is reasonable as that is farther from the western downtown area where most of the neighborhoods would be zoned as commercial. On the other hand, distance to vacant property is positively statistically significant in the center of the city but negatively statistically significant in the in the southeast. Similarly, median income is positively significant near the downtown area and central-east, but there are enclaves of blocks where the relationship is negative. Finally, homeownership is mainly statistically significant (positively) in the northwest of the city. 
 
 
 
@@ -1134,14 +1311,17 @@ grid.arrange(t_arrest_count, t_perc_hispanic, t_perc_black, t_resid_high_per, t_
               ncol = 4, top = textGrob("Local t-values", gp=gpar(fontsize=20)))
 ```
 
-# **Discussion of Modelling Results**
+# **Conclusion: Discussion of Modelling Results**
 
-Discussion on the Modelling Results here
-- why we pick GWPR; how the city can target the west effectively based on the results.
+In this study, we explored risk factors associated with overdose counts in Mesa, Arizona. We tried an OLS model, Poisson model, spatial lag model, spatial error model, spatial durbin model, geographically weighted regression, and geographically weighted poisson regression. While our Moran's tests suggested no significant spatial autocorrelation for our models, the mapping of the residuals of our initial models indicated higher residuals in the central and eastern part of the city leading us to make increasingly more complex spatial models and finally ending with geographcially weighted regression models.
 
-# **Conclusion**
+After evaluating the results of the various models, we find that the geographically weighted poisson regression model was the best fit for our study. This model was the most applicable given that poisson regressions are a better fit for count data such as the number of opoioid overdoses and the fact that the overdose cases different greatly in the eastern and central part of Mesa. For this reason, a geographically weighted regression that created different models for each part of the city was the most valuable in understanding how different risk factors affect different neigborhoods of the city in distinct ways. Our final model had a pseudo-r-squared result of 0.69, meaning we are able to explain almost 70% of the variation in the data, although the amount of variation explained varies greatly based on the census block group.
 
-Summary
+Based on the results of this model, we developed suggestions for the City of Mesa as it looks to understand factors associated with overdose counts. Firstly, encourage the government to focus on supporting the neighborhoods with high populations of minority groups, namely black and Hispanic residents. Specifically, the city should look into these populations in the western and central parts of the cities respectively, as these are the places with the largest associations with overdose cases. Similarly, in the eastern and west-central part of the city where median income is negatively correlated with overdose counts, the city should take preventive measures by aiding lower income families. In the northwest of the city, the government should be mindful of residents who might be burderned by high-cost of living because in this area homeownership is highly positively correalted with overdoses. While we are not sure the cause of this situation, it is possible that the higher homeownership is linked to that some areas of the northwest have high incomes and are zoned for larger single-family homes which could be creating a cost-of-living burden for some residents. 
+
+Futhermore, the government should be proactive about interventions in neighborhoods with high crime, given the number of arrests is highly correlated with overdose counts in all census block groups. This is not a call for additional policing. On the contrary, the fact that the distance to public safety is mainly negatively associated with the overdoses points to the limitations of the public safety and policing system. Instead, we suggest making proactive interventions and support in areas where crime is high. Finally, we noted that we beleive that the reason distance to public greenspace has a significant negative relationship with overdose incidents in the west of the city is because most of the greenspace owned by the city is near the city center. Consequently, we suggest that the government should prioritize towards making the city center safer, especially establishing more preventive resources in this area. 
+
+
 
 # References
 
