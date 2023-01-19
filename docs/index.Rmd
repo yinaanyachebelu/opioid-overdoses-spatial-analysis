@@ -1,17 +1,20 @@
 ---
-title: 'Identifying Opioid Overdose Risk in Mesa, USA Using Spatial Regression'
-subtitle: "Spatial Analysis and Geocompution at UCL"
+title: "Identifying Opioid Overdose Risk in Mesa, USA Using Spatial Regression"
 author: "Ayina Anyachebelu, Yik Kien Tse, Humza Hussain, Yiru Xu, and Girish Joijode"
+subtitle: Spatial Analysis and Geocompution at UCL
 output:
   html_document:
-    toc: true 
+    toc: yes
     toc_float:
-      collapsed: false
+      collapsed: no
     toc_depth: 4
     theme: cosmo
     highlight: tango
-    code_folding: "hide"
-    fig_caption: true
+    code_folding: hide
+    fig_caption: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '4'
 ---
 
 ```{r setup, results='hide', message=FALSE, warning=FALSE, include=TRUE}
@@ -59,6 +62,8 @@ library(r2symbols)
 
 options(scipen=999)
 ```
+
+Word Count: 7192
 
 # **Introduction**
 
@@ -699,7 +704,7 @@ lm.morantest(preg, mesa_weights, zero.policy=TRUE)
 Although we cannot reject the null hypothesis based of our Moran correlation test results, an examination of the residuals of the OLS model (figure 15), shows that their distribution appear to be non-random with large positive residuals in the west and center of the city.  The poisson model has residual values of smaller magnitude which are more evenly spread out spatially. However, there still seems to be some clustering of positive residuals in the west and center of the city. For this reason, we proceed with spatial regression models.
 
 
-```{r fig.height=2.5, fig.width=6,results='hide', message=FALSE, warning=FALSE}
+```{r fig.height=3.5, fig.width=8,results='hide', message=FALSE, warning=FALSE}
 mesa_all$res_m1 <- residuals(reg)
 
 legend_title = expression("OLS model residuals") 
@@ -822,10 +827,10 @@ map + hist + qq
 
 ```
 
-***Figure 20: Spatial Lag Model Residuals***
-***Panel A: Spatial distribution of residuals,***
-***Panel B: Frequency distribution of residuals,***
-***Panel C: QQ-plot***
+***Figure 20: Spatial Lag Model Residuals: ***
+***Panel A: Spatial distribution of residuals, ***
+***Panel B: Frequency distribution of residuals, ***
+***Panel C: QQ-plot.***
 
 All in all, these observations indicate that there is insufficient evidence to reject the null hypothesis. Therefore, we cannot say with confidence that the dependent variable (opioid overdoses) is correlated with the same variable at nearby locations. Different spatial regression models may better explain the spatial autocorrelation observed from the exploratory spatial data analysis. 
 
@@ -887,10 +892,10 @@ map + hist + qq
 
 ```
 
-***Figure 22: Spatial Error model residuals***
-***Panel A: Spatial distribution of residuals,***
-***Panel B: Frequency distribution of residuals,***
-***Panel C: QQ-plot***
+***Figure 22: Spatial Error model residuals: ***
+***Panel A: Spatial distribution of residuals, ***
+***Panel B: Frequency distribution of residuals, ***
+***Panel C: QQ-plot.***
 
 Thus, at this part, we can conclude that the spatial error model is unable to make significant improvements on the OLS model and spatial lag models. A better regression model should be applied, or more appropriate variables should be added to the model to achieve a better fitting effect.
 
@@ -944,10 +949,10 @@ map + hist + qq
 
 ```
 
-***Figure 24: Spatial Durbin model residuals***
-***Panel A: Spatial distribution of residuals,***
-***Panel B: Frequency distribution of residuals,***
-***Panel C: QQ-plot***
+***Figure 24: Spatial Durbin model residuals: ***
+***Panel A: Spatial distribution of residuals, ***
+***Panel B: Frequency distribution of residuals, ***
+***Panel C: QQ-plot.***
 
 
 Similarly to the spatial lag model and spatial error model, the plotting of the residuals of the spatial durbin model shows they need to be accounted for in the model since the residuals are almost identical to those of the linear OLS regression and the spatial lag model (figure 24). Therefore, the spatially lagged dependent variable with the spatially lagged independent variables in the spatial durbin model cannot fully explain the opioid overdose data with the independent variables in Mesa. Other spatial regression models are preferred in order to show a better fit in this case.
@@ -999,7 +1004,8 @@ gwrG <- gwr(overdose_count ~ arrests_count + median_income + perc_black + perc_h
 gwrG
 ```
 
-***Figure 25: Results from Geographically Weighted Regression
+***Figure 25: Results from Geographically Weighted Regression***
+
 
 The output of the GWR model shows that the Quasi-global R-squared value of 0.36, meaning it is only able to explain around 36% of the variation in the dependent variable.
 
@@ -1353,17 +1359,20 @@ grid.arrange(t_arrest_count, t_perc_hispanic, t_perc_black, t_resid_high_per, t_
 
 In this study, we explored risk factors associated with overdose counts in Mesa, Arizona. We tried an OLS model, Poisson model, spatial lag model, spatial error model, spatial durbin model, geographically weighted regression, and geographically weighted poisson regression. While our Moran's tests suggested no significant spatial autocorrelation for our models, the mapping of the residuals of our initial models indicated higher residuals in the central and eastern part of the city, leading us to make increasingly more complex spatial models and finally ending with geographcially weighted regression models.
 
-After evaluating the results of the various models, we find that the geographically weighted poisson regression model was the best fit for our study. This model was the most applicable given that poisson regressions are a better fit for count data such as the number of opoioid overdoses, and the fact that the overdose cases differed greatly in the eastern and central part of Mesa. For this reason, a geographically weighted regression that created different models for each part of the city was the most valuable in understanding how different risk factors affect different neigborhoods of the city in distinct ways. Our final model had a pseudo-r-squared result of 0.69, meaning we are able to explain almost 70% of the variation in the data, although the amount of variation explained varies greatly based on the census block group.
+After evaluating the results of the various models, we find that the geographically weighted poisson regression model was the best fit for our study. This model was the most applicable given that poisson regressions are a better fit for count data such as the number of opoioid overdoses, and the fact that the overdose cases differed greatly in the eastern and central areas compared to other parts of Mesa. For this reason, a geographically weighted regression that created different models for each part of the city was the most valuable in understanding how different risk factors affect different neigborhoods of the city in distinct ways. Our final model had a pseudo-r-squared result of 0.69, meaning we are able to explain almost 70% of the variation in the data, although the amount of variation explained varies greatly based on the census block group.
 
-Based on the results of this model, we developed suggestions for the City of Mesa as it looks to understand factors associated with overdose counts. Firstly, we encourage the government to focus on supporting the neighborhoods with high populations of minority groups, namely black and Hispanic residents. Specifically, the city should look into these populations in the western and central parts of the cities respectively, given the places had the largest associations with overdose cases. Similarly, in the eastern and west-central part of the city where median income is negatively correlated with overdose counts, the city should take preventive measures by aiding lower income families. In the northwest of the city, the government should be mindful of residents who might be burderned by high costs of living as homeownership is highly positively correalted with overdoses in this area. While we are not sure about the cause of this relationship, it is possible that the higher homeownership is linked to the fact that some areas of the northwest have high incomes and are zoned for larger single-family homes, which could be creating a cost-of-living burden for some residents. 
+Based on the results of this model, we developed suggestions for the City of Mesa as it seejs to understand factors associated with overdose incidentss. Firstly, we encourage the government to focus on supporting the neighborhoods with high populations of minority groups, namely black and Hispanic residents. Specifically, the city should look into these populations in the western and central parts of the cities respectively, considering these places had the largest associations between race/ethnicity and overdose cases. Similarly, in the eastern and west-central part of the city where median income is negatively correlated with overdose counts, the city should take preventive measures by aiding lower income families. In the northwest of the city, the government should be mindful of residents who might be burderned by high costs of living as homeownership is highly positively correalted with overdoses in this area. While we are not sure about the cause of this relationship, it is possible that the higher homeownership is linked to the fact that various areas of the northwest have higher incomes and are zoned for larger single-family homes, which could be creating a cost-of-living burden for some residents. 
 
-Futhermore, the government should be proactive about interventions in neighborhoods with high crime, given the number of arrests is highly correlated with overdose counts in all census block groups. This is not a call for additional policing. On the contrary, the fact that the distance to public safety is mainly negatively associated with overdoses points to the limitations of the public safety and policing system. Instead, we suggest making proactive interventions and support in areas where crime is high. Finally, we noted that we beleive that the reason distance to public greenspace has a significant negative relationship with overdose incidents in the west of the city is because most of the greenspace owned by the city is near the city center. Consequently, we suggest that the government should prioritize towards making the city center safer, especially establishing more preventive resources in this area. 
+Futhermore, the government should be proactive about interventions in neighborhoods with high crime, given the number of arrests is highly correlated with overdose counts in all census block groups. This is not a call for additional policing. On the contrary, the fact that the distance to public safety is mainly negatively associated with overdoses points to the limitations of the public safety and policing system. Instead, we suggest preventive interventions in areas where crime is high or increasing. Finally, we noted that we beleive that the reason distance to public greenspace has a significant negative relationship with overdose incidents in the west of the city is because most of the greenspace owned by the city is near the city center. Consequently, we suggest that the government should prioritize towards making the city center safer, especially establishing more resources to develop a more secure and inclusive downtown.
 
-### Limitations
+## Limitations and Further Work
 
-One major limitation in our findings is the use of opioid overdose cases as a way of measuring opioid overdoses. Given that these overdose cases only account for those reported, there is alwasy potential for overdose counts to be an underestimation of the true level of influence of this on the population of Mesa. However, given how difficult it would be to measure the true level of opioid overdoses city wide, using this dataset was a viable alternative in the context of our study (assuming the level of unreported overdoses was not spatially autocorrelated).
+One major limitation in our findings is the use of opioid overdose cases as a way of measuring opioid overdoses. Given that these overdose cases only account for those reported or identified by the municipality, there is alwasy potential for overdose counts to be an underestimation of the true level of influence of this on the population of Mesa. However, given how difficult it would be to measure the true level of opioid overdoses city wide, using this dataset was a viable alternative in the context of our study (assuming the level of unidentified overdoses was not spatially autocorrelated).
 
-While we wanted our analysis to be as up to data as possible, The beginning of the COVID-19 pandemic fell into the selected time frame. This could have affected our results given the influx of opioid cases observed in the USE during that time period. This could have led to higher cases in areas that were not previously vulnerable to opioid overdoses, thus potentially affecting our results.
+Secondly, our data set consisted of overdose cases from 2018 to 2020 since we aimed to use the most up-to-date data matching with the latest US Census reports (2020). Because the COVID-19 pandemic which corresponded to national spikes in opioid usage falls within our selected time frame, overdose cases could have been affected by various additional factors unaccounted for. Depending on the extent to which opioid usage returns to its previous rates, our findings might be overstating areas that had higher number of cases during the pandemic, but were nor normally as vulnerable to opoioid overdoses.
+
+While our study aimed at informing the municipality about general trends in risk factors associated with overdose incidents, futher work could extend our research to provide a temporal context. For example, a spatio-temporal analysis of incidents could investigate whether overdose spikes are seasonal, and if they occur at different periods for different neighborhoods. While the overall number of cases in Mesa has been increasing, it would also be helpful to examine if the cases are rising in only specific neighborhoods while they are falling in others. Finally, given the big effect of the pandemic, it would serve to explore how the correlations between the risk factors and overdose counts changed before and after the shutdowns as these findings can prepare the city for targeted interventions to take during future crisis situations. 
+
 
 # References
 
