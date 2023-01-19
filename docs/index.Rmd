@@ -1351,7 +1351,7 @@ Burchfield E. (2020) Spatial Regression, Available from: https://www.emilyburchf
 
 Fotheringham A. S., Brunsdon C. and Charlton M., (2003), Geographically weighted regression: the analysis of spatially varying relationships, John Wiley & Sons.
 
-Gollini I., Lu B., Charlton M., Brunsdon C., and Harris P. (2013), "GWmodel: an R Package for Exploring Spatial Heterogeneity using Geographically Weighted Models", arXiv, 2013. https://arxiv.org/abs/1306.0413
+Gollini I., Lu B., Charlton M., Brunsdon C., and Harris P. (2013), "GWmodel: an R Package for Exploring Spatial Heterogeneity using Geographically Weighted Models", arXiv, Available from: https://arxiv.org/abs/1306.0413
 
 Gollini I., Charlton M., Brunsdon C., and Harris P. (2015), "GWmodel: an R Package for Exploring Spatial Heterogeneity using Geographically Weighted Models", Journal of Statistical Software, 63(17).
 
@@ -1363,7 +1363,7 @@ Kosten T. R. and T. P. George (2002) “The neurobiology of opioid dependence: I
 
 Krausz R. M., J. N. Westenberg and K. Ziafat (2021) “The opioid overdose crisis as a global health challenge”, Current Opinion in Psychiatry, 34, 4, 405-412.
 
-Lee Hyeyoung, Ghosh Sujit K. (2009) "Performance of information criteria for spatial models", Journal of Statistical Computation and Simulation, 79, 1, 93-106.
+Lee H., S. K. Ghosh (2009) "Performance of information criteria for spatial models", Journal of Statistical Computation and Simulation, 79, 1, 93-106.
 
 Lippold K. M., Jones C. M., Olsen E. O. and Giroir B. P. (2019) “Racial/Ethnic and Age Group Differences in Opioid and Synthetic Opioid-Involved Overdose Deaths Among Adults Aged ≥18 Years in Metropolitan Areas - United States, 2015-2017”,  MMWR Morb Mortal Wkly Rep,  68, 4, 967-73. doi: 10.15585/mmwr.mm6843a3. 
 
