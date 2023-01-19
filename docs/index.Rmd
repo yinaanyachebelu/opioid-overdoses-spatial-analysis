@@ -898,6 +898,7 @@ Thus, at this part, we can conclude that the spatial error model is unable to ma
 ## Spatial Durbin Watson Model
 ***By Yik Kien Tse***
 
+
 ### Methodology
 
 The formula of the Spatial Durbin Model is as follows:
@@ -905,11 +906,11 @@ $$
 Y = \rho Wy + X\beta + WX \theta + \epsilon
 $$
 
-The Spatial Durbin Model (SDM) a model that extends from the Spatial Lag Model, that takes account of the spillover effects of both the independent variables and the dependent variable in one model (Atikah et al., 2021). $Y$ is the vector of observations, $\rho W$ is the scalar autocorrelation parameter and $n∗n$ is the spatial weight matrix that allows neighboring parameters for the dependent variable, $X\beta$ is the $n∗m$ matrix and $n∗1$ estimated parameters of the independent variables respectively. $WX$ creates a weighed sum of independent variables neighboring the location, it is then each multiplied by the $m∗1$ autocorrelation parameter $\theta$. Lastly, the $\epsilon$ is the expected normally distributed errors.
+The Spatial Durbin Model (SDM) is a model that extends from the Spatial Lag Model, that takes account of the spillover effects of both the independent variables and the dependent variable in one model (Atikah et al., 2021). $Y$ is the vector of observations, $\rho W$ is the scalar autocorrelation parameter and $n∗n$ is the spatial weight matrix that allows neighboring parameters for the dependent variable. $X\beta$ is the $n∗m$ matrix and $n∗1$ estimated parameters of the independent variables respectively. $WX$ creates a weighed sum of independent variables neighboring the location, which are then each multiplied by the $m∗1$ autocorrelation parameter $\theta$. Lastly, the $\epsilon$ is the expected normally distributed errors.
 
 ### Results
 
-The results of the Spatial Durbin model are shown below.
+The results of the Spatial Durbin model are shown below (figure 23).
 
 ```{r message=FALSE, warning=FALSE}
 mesa_all <- mesa_dataset[all_vars]
@@ -919,9 +920,11 @@ mesa.durbin <- lagsarlm(overdose_count ~ arrests_count + median_income + perc_bl
 summary(mesa.durbin)
 ```
 
-As seen in the results, Rho, the spatial autoregressive term, is 0.019, with an insignificant p-value of 0.830, which is similar to the result of the spatial lag model, indicating that it does not necessarily improve fitting the model with the additional $p$. Also comparing, to the spatial lag model, the log-likelihood is higher (-1.071.7 vs -1.076.6), but the AIC coefficient is higher as well (2193.3 vs 2181.2), so whether adding the spatially lagged independent variable effect improves fitting the model is contradictory since the log-likelihood improved but the AIC coefficient is not because a lower value is preferred (Lee and Ghosh, 2009). Furthermore, the Wald test, another spatial dependence test, has a value of 0.046 with a p-value of 0.831, showing that it is also insignificant. Lastly, for the LM test, which tests residual autocorrelation, the chi-square value is 0.097 with a p-value of 0.755. It indicates that this model does not perform better in accounting for the autocorrelation in the data, and the residual is not fully accounted for in the SDM.
+***Figure 23: Results from Spatial Durbin model***
 
-Next, looking at the coefficients of the independent variables as well as the lagged independent variables, only one variable showed statistical significance, with a 5% significance level, being the percentage of land zoned as high-density residential. It has a positive relationship with opioid overdose cases, that a 1% increase in the percentage of land zoned as high-density residential corresponded to a 0.055 increase in opioid overdose cases count in the area. Comparing to the spatial lag model, other 3 significant variables including police incidents, Hispanic population percentage and average distance to public safety are insignificant in the spatial durbin model. SDM generally does not show positive feedback to our hypothesis other than affirming the positve relationship of opioid overdose cases and proximity to high-density residential.
+As seen in the results, Rho, the spatial autoregressive term, is 0.019, with an insignificant p-value of 0.830. These are similar to the results of the spatial lag model, and indicate that it does not necessarily improve fitting the model with the additional $p$. Compared to the spatial lag model, the log-likelihood is higher (-1.071.7 vs -1.076.6), but the AIC coefficient is higher as well (2193.3 vs 2181.2), so whether adding the spatially lagged independent variable effect improves fitting the model is contradictory since the log-likelihood improved but the AIC coefficient was not as a lower value is preferred (Lee and Ghosh, 2009). Furthermore, the Wald test, another spatial dependence test, has a value of 0.046 with a p-value of 0.831, showing that it is also statistically insignificant. Lastly, for the LM test, which tests residual autocorrelation, the chi-square value is 0.097 with a p-value of 0.755. It indicates that this model does not perform better in accounting for the autocorrelation in the data, and the residuals are not fully accounted for in the SDM.
+
+Looking at the coefficients of the independent variables as well as the lagged independent variables, only one variable showed statistical significance at the 5% confidence level, that being the percentage of land zoned as high-density residential. It has a positive relationship with opioid overdose cases, that a 1% increase in the percentage of land zoned as high-density residential corresponded to a 0.055 increase in opioid overdose cases in the area. Compared to the spatial lag model, other 3 significant variables including police incidents, Hispanic population percentage and average distance to public safety are insignificant in the spatial durbin model. SDM generally does not show positive feedback to our hypothesis other than affirming the positve relationship of opioid overdose cases and proximity to high-density residential areas.
 
 ```{r fig.height=4, fig.width=9, results='hide', message=FALSE, warning=FALSE}
 mesa_data$mesa.res <- residuals(mesa.durbin)
@@ -941,14 +944,13 @@ map + hist + qq
 
 ```
 
-***Figure ?: Spatial Durbin Model Residuals***
-***Panel A: Spatial Distribution of Residuals,***
-***Panel B: Frequency Distribution of Residuals,***
-***Panel C: QQ Plot***
+***Figure 24: Spatial Durbin model residuals***
+***Panel A: Spatial distribution of residuals,***
+***Panel B: Frequency distribution of residuals,***
+***Panel C: QQ-plot***
 
 
-Similar to the spatial lag model and spatial error model, the plotting of the residuals of the spatial durbin model shows they need to be accounted for in the model since the residuals are almost identical to those of the linear OLS regression and the spatial lag model. Therefore, the spatially lagged dependent variable with the spatially lagged independent variables in the spatial durbin model cannot fully explain the opioid overdose data with the independent variables in Mesa. Other spatial regression models are preferred in order to show a better fit in this case.
-
+Similarly to the spatial lag model and spatial error model, the plotting of the residuals of the spatial durbin model shows they need to be accounted for in the model since the residuals are almost identical to those of the linear OLS regression and the spatial lag model (figure 24). Therefore, the spatially lagged dependent variable with the spatially lagged independent variables in the spatial durbin model cannot fully explain the opioid overdose data with the independent variables in Mesa. Other spatial regression models are preferred in order to show a better fit in this case.
 
 
 ## Geographically Weighted Regression
@@ -964,11 +966,11 @@ mesa.W <- nb2listw(poly2nb(mesa_a))
 options(scipen = 7)
 ```
 
-Geographically weighted regression (GWR) is a method for analyzing spatially varying relationships (C. Brunsdon, Fotheringham, and Charlton 1998). It is an extension of linear regression that allows to vary across space (Brunsdson et al., 1998). The general form of the model is:
+Geographically weighted regression (GWR) is a method for analyzing spatially varying relationships (C. Brunsdon, Fotheringham, and Charlton 1998). It is an extension of linear regression that accounts for variation across space (Brunsdson et al., 1998). The general form of the model is:
 
 $y_i=\beta_{i0}+ \sum_{p=1}^m \beta_{ip} x_{ip}+ \epsilon_i$
 
-where $\beta_{i0}$ us the intercept term at location i, i= 1,2,....,N; Nis the number of spatial locations; $\beta_{ip}$ is the value of the pth parameter at location i,p= 1,2,...,m; m is the number of independent variables; $\epsilon_i$ is a random error.
+where $\beta_{i0}$ us the intercept term at location i, i= 1,2,....,N; N is the number of spatial locations; $\beta_{ip}$ is the value of the pth parameter at location i,p= 1,2,...,m; m is the number of independent variables; $\epsilon_i$ is a random error.
 
 ```{r message=FALSE, warning=FALSE, include=FALSE, results='hide'}
 st_c <- st_coordinates
@@ -986,16 +988,18 @@ mesa_a <- as(mesa_a, 'Spatial')
 bwG <- gwr.sel(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic + perc_owners + resid_high_per + commercial_per + dist_greenspace + dist_vacant_prop + dist_graffiti + dist_public_safety, data = mesa_a, coords = cbind(mesa_a$long, mesa_a$lat), gweight = gwr.Gauss, verbose = FALSE, longlat = FALSE)
 ```
 
- First, we first obtain the centroid points and their coordinates for all district polygons. Choice of bandwidth affects the results of GWR so it is important to select a reasonable value. In the spgwr package, the ‘optimal’ bandwidth can be estimated using the gwr.sel function. This function uses a method called leave-one-out cross-validation (LOO-CV) to find the bandwidth that results in the smallest error. With the acquired bandwidth of `bwG` we can fit GWR model.
- 
+We first obtain the centroid points and their coordinates for all district polygons. Choice of bandwidth affects the results of GWR so it is important to select a reasonable value. In the spgwr package, the ‘optimal’ bandwidth can be estimated using the gwr.sel function. This function uses a method called leave-one-out cross-validation (LOO-CV) to find the bandwidth that results in the smallest error. With the acquired bandwidth of `bwG` we can fit the GWR model.
+
 ### Results
 
-The results of the Geographically Weighted Regression is shown below. 
+The results of the Geographically Weighted Regression are shown below (figure 25). 
 
 ```{r message=FALSE, warning=FALSE}
 gwrG <- gwr(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic + perc_owners + resid_high_per + commercial_per + dist_greenspace + dist_vacant_prop + dist_graffiti + dist_public_safety, data = mesa_a, , coords = cbind(mesa_a$long, mesa_a$lat), bandwidth = bwG, gweight = gwr.Gauss, hatmatrix = TRUE, longlat=FALSE)
 gwrG
 ```
+
+***Figure 25: Results from Geographically Weighted Regression
 
 The output of the GWR model shows that the Quasi-global R-squared value of 0.36, meaning it is only able to explain around 36% of the variation in the dependent variable.
 
@@ -1003,9 +1007,11 @@ The output of the GWR model shows that the Quasi-global R-squared value of 0.36,
 gwr.morantest(gwrG, mesa.W)
 ```
 
-To check the residuals for autocorrelation, we use the Moran's I. The p-value of 0.2914 is not significant at the 5% level revealing that we cannot reject the null hypothesis that there is no spatial autcorrelation. This means that the GWR is able to account for the spatial autocorrelation in the opiod overdose incidents.
+***Figure 26: Moran's I for GWR resiudals***
 
-By mapping each of the varying coefficient estimates, we can examine these statistical values change spatially. 
+To check for autocorrelation in the residuals, we use the Moran's I (Figure 26). The p-value of 0.2914 is not significant at the 5% level, revealing that we cannot reject the null hypothesis that there is no spatial autcorrelation. This means that the GWR is able to account for the spatial autocorrelation in the opiod overdose incidents.
+
+By mapping each of the varying coefficient estimates, we can examine how these statistical values change spatially (figure 27). 
 
 ```{r message=FALSE, warning=FALSE, include=FALSE, results='hide'}
 
@@ -1065,10 +1071,12 @@ coef_dist_graffiti<-spplot(mesa_a,"coef_dist_graffiti", main=list(label="Dist to
 grid.arrange(coef_arrest_count, coef_perc_hispanic, coef_perc_black, coef_resid_high_per, coef_dist_greenspace, coef_dist_public_safety, coef_median_income, coef_perc_owners, coef_commercial_per, coef_dist_vacant_prop, coef_dist_graffiti, top = textGrob("GWR Coefficient Estimates", gp=gpar(fontsize=20)))
 ```
 
+***Figure 27: Spatial distribution of residuals from GWR***
 
 
 ## Geographically Weighted Poisson Regression
 ***By Ayina Anyachebelu***
+
 
 ### Methodology
 
@@ -1088,7 +1096,7 @@ $$
 $$
 where $W(u_{xi},u_{yi})$ denotes a spatial weight matrix containing weights calculated based on the distance between the centroid of the $i$th census block group with coordinates (u_{xi},u_{yi}) and its spatial neighbors j (Fortheringham et al, 2003). 
 
-The spatial weight $w_{ij}$ allows for census block groups closer to the $i$th census block group to have a larger influence on the parameter estimation for $\beta_i$. The weight is based on a kernel function. We experiment with two kernel functions the Gaussian and Exponential, which are both continuous functions of the distance between observation points. 
+The spatial weight $w_{ij}$ allows for census block groups closer to the $i$th census block group to have a larger influence on the parameter estimation for $\beta_i$. The weight is based on a kernel function. We experiment with two kernel functions, the Gaussian and Exponential, which are both continuous functions of the distance between observation points. 
 
 The corresponding weight matrices are calculated as follows
 
@@ -1096,7 +1104,7 @@ Gaussian: $w_{i j}=\exp \left(-\frac{1}{2}\left(\frac{d_{i j}}{b}\right)^2\right
 
 where $h$ is the kernel bandwidth and $d_{ij}$ is the distance between points i and j (Gollini et al., 2013). 
 
-For each kernel function, we also experiment with both a fixed kernel (which use a fixed bandwidth) and adaptive kernel (which uses a varying bandwidth based on the number of nearest neighbors from a given regression point.) Given we have census block groups of different sizes, the adaptive kernels could be useful because these kernels change in size based on the density of data. Using the fixed kernels could result in calibration on few observation points for local regression in larger units and vice versa resulting in larger standard errors (Gollini et al., 2013). 
+For each kernel function, we also experiment with both a fixed kernel (which use a fixed bandwidth) and adaptive kernel (which uses a varying bandwidth based on the number of nearest neighbors from a given regression point.) Given we have census block groups of different sizes, the adaptive kernels could be useful because these kernels change in size based on the density of data. Using the fixed kernels could result in calibration on few observation points for local regression in larger units and vice versa, resulting in larger standard errors (Gollini et al., 2013). 
 
 
 ```{r results='hide', message=FALSE, warning=FALSE}
@@ -1167,7 +1175,7 @@ bw.gwrEA <- bw.ggwr(overdose_count ~ arrests_count + median_income + perc_black 
 
 ```
 
-We select the optimal bandwidth for each kernel by minimizing the Akaike Information Criterion to account for both prediction accuracy as well as lower complexity of our model (Gollini et al., 2015). For the fixed Gaussian and Exponential kernels the optimal bandwidths were `r bw.gwrG` and `r bw.gwrE` meters respectively. For the adaptive Gaussian and Exponential kernels, the optimal bandwidths was `r bw.gwrEA` nearest neighbors. 
+We select the optimal bandwidth for each kernel by minimizing the Akaike Information Criterion to account for both prediction accuracy as well as lower complexity of our model (Gollini et al., 2015). For the fixed Gaussian and Exponential kernels, the optimal bandwidths were `r bw.gwrG` and `r bw.gwrE` meters respectively. For the adaptive Gaussian and Exponential kernels, the optimal bandwidths was `r bw.gwrEA` nearest neighbors. 
 
 
 ```{r results='hide', message=FALSE, warning=FALSE}
@@ -1225,10 +1233,9 @@ bgwr.Pr <- ggwr.basic(overdose_count ~ arrests_count + median_income + perc_blac
 
 ```
 
-
 ### Results
 
-We fit the 4 geographically weighted Poisson models using their corresponding optimal bandwidths. We find that the model using the exponential adaptive kernel has the lowest AIC and residual sum of squares and the highest Pseudo R-squared values. Below are the maps of the standard deviation of the local residual values for the models. As mentioned, exponential adaptive kernel appears to have the best fit for our data, so we choose these parameters for our final model. 
+We fit the 4 geographically weighted Poisson models using their corresponding optimal bandwidths. We find that the model using the exponential adaptive kernel has the lowest AIC and residual sum of squares and the highest Pseudo R-squared values. Below are the maps of the standard deviation of the local residual values for the models (figure 28). As mentioned, exponential adaptive kernel appears to have the best fit for our data, so we choose these parameters for our final model. 
 
 ```{r residuals_4, results='hide', message=FALSE, warning=FALSE}
 gwr_out <- as.data.frame(bgwr.gnPr$SDF)
@@ -1261,23 +1268,21 @@ grid.arrange(gauss_na_localRes, gauss_localRes, exp_na_localRes, exp_localRes,
              ncol= 3, heights = c(20,20), top = textGrob("Stdev of Residuals", gp=gpar(fontsize=20)))
 ```
 
-Below are the results of the geographically weighted poisson regression using an adaptive exponential kernel. The results show that the model has a pseudo R-squared value of 0.69, meaning that it is able to explain almost 70% of the variation in overdose cases. This is a substantial improvement from the 45% R-squared value of the baseline poisson model. 
+***Figure 28: Standard deviation of local residual values from models***
 
-The results of the GWPR provide us with better insight into how the risk factors vary across the different census block groups. For example, the baseline poisson regression indicated that 1 additional arrest corresponded with a 0.068% increase in overdoses. However, with the GWPR we see that the increase can be over 3 times higher, corresponding to a 0.23% increase in overdoses. The broadness of the ranges in local estimates are even more pronounced for the Hispanic population as well as land zoned as high-density residential. The initial estimate from the baseline model indicated that one percentage point increase in the proportion of Hispanic residents was associated with a 0.7% increase in number of overdoses, but the GWPR reveals that it can be associated with an overdose increase of as high as 2.8% in some city areas. Meanwhile, estimates for increases in incidents corresponding to high-density residential zoning range from as low as 
-0.1% to as high as ~ 2.5%. The results also reveal that a majority of our distance-related risk factors, especially the distance to public greenspace and distance to public safety are almost always negatively correlated with overdose cases, regardless of the part of the city which disaffirms our original hypothesis that in blocks closer to these facilities there will be less incidents. 
+Below are the results of the geographically weighted poisson regression using an adaptive exponential kernel (figure 29). The results show that the model has a pseudo R-squared value of 0.69, meaning that it is able to explain almost 70% of the variation in overdose cases. This is a substantial improvement from the 45% R-squared value of the baseline poisson model. 
+
+The results of the GWPR provide us with better insight into how the risk factors vary across the different census block groups. For example, the baseline poisson regression indicated that 1 additional arrest corresponded with a 0.068% increase in overdoses. However, with the GWPR we see that the increase can be over 3 times higher, corresponding to a 0.23% increase in overdoses. The broadness of the ranges in local estimates are even more pronounced for the Hispanic population as well as land zoned as high-density residential. The initial estimate from the baseline model indicated that one percentage point increase in the proportion of Hispanic residents was associated with a 0.7% increase in number of overdoses, but the GWPR reveals that it can be associated with an overdose increase of as high as 2.8% in some city areas. Meanwhile, estimates for increases in incidents corresponding to high-density residential zoning range from as low as 0.1% to as high as ~ 2.5%. The results also reveal that a majority of our distance-related risk factors, especially the distance to public greenspace and distance to public safety, are almost always negatively correlated with overdose cases, regardless of the part of the city. This disaffirms our original hypothesis that in blocks closer to these facilities there will be less incidents. 
 
 ```{r warning=FALSE}
 bgwr.Pr
 ```
 
+***Figure 29: Results from Geographically Weighted Poisson Regression using an adaptive exponential kernel***
 
+Given that the magnitude of the coefficients is very small, it is useful to examine the test statistics to investigate how the statistical significance of these values change spatially. Below are maps of the pseudo t-values for each of the risk factors (figure 30). 
 
-
-Given that the magnitude of the coefficients is very small, it is useful to examine the test statistics to investigate how the statistical significance of these values change spatially. Below are maps of the pseudo t-values for each of the risk factors. 
-
-From the results, we observe that the number of arrests is almost always statistically significant in all regions, but it is especially significant in the northeast, southeast and western-central areas of the city. Additionally, the hispanic population is increasingly significant closer to the center of the city while the black population is significant in the far west of the city. Distance to greenspace has a significant negative relationship with overdose incidents in the west of the city while distance to public safety has a significant negative relationship with overdose cases in the east of the city. However, it is important to note when interpreting these results that thes are municipal-run facilities, so for example, our model is only taking into consideration city-owned parks are not accounting for private greenspace which might be available in other areas. Unsurprisingly, land zoned being zoned commercial is only significant in the east of the city which is reasonable as that is farther from the western downtown area where most of the neighborhoods would be zoned as commercial. On the other hand, distance to vacant property is positively statistically significant in the center of the city but negatively statistically significant in the in the southeast. Similarly, median income is positively significant near the downtown area and central-east, but there are enclaves of blocks where the relationship is negative. Finally, homeownership is mainly statistically significant (positively) in the northwest of the city. 
-
-
+From the results, we observe that the number of arrests is almost always statistically significant in all regions, but it is especially significant in the northeast, southeast and western-central areas of the city. Additionally, the hispanic population is increasingly significant closer to the center of the city, while the black population is significant in the far west of the city. Distance to greenspace has a significant negative relationship with overdose incidents in the west of the city while distance to public safety has a significant negative relationship with overdose cases in the east of the city. However, it is important to note when interpreting these results that these are municipal-run facilities, so for example, our model is only taking into consideration city-owned parks are not accounting for private greenspace which might be available in other areas. Unsurprisingly, land being zoned commercial is only significant in the east of the city, which is reasonable as that is farther from the western downtown area where most of the neighborhoods would be zoned as commercial. On the other hand, distance to vacant property is positively statistically significant in the center of the city, but negatively statistically significant in the in the southeast. Similarly, median income is positively significant near the downtown area and central-east, but there are enclaves of blocks where the relationship is negative. Finally, homeownership is mainly statistically significant (positively) in the northwest of the city. 
 
 ```{r results='hide', fig.height=6, fig.width=9, message=FALSE, warning=FALSE}
 
@@ -1340,6 +1345,9 @@ grid.arrange(t_arrest_count, t_perc_hispanic, t_perc_black, t_resid_high_per, t_
              t_dist_vacant_prop, t_dist_graffiti,
               ncol = 4, top = textGrob("Local t-values", gp=gpar(fontsize=20)))
 ```
+
+***Figure 30: Pseudo t-values for each of the risk factors***
+
 
 # **Conclusion: Discussion of Modelling Results**
 
