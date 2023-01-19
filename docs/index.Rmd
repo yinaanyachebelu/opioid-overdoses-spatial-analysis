@@ -653,7 +653,7 @@ where $x_1$ = 1 so $\beta_1$ represents our constant term and for any values of 
 
 ### Results
 
-Below are the results of the OLS Model (Figure 11). 
+Below are the results of the OLS model (Figure 11). 
 
 ```{r message=FALSE, warning=FALSE}
 reg <- lm(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic + perc_owners +
@@ -665,11 +665,9 @@ summary(reg)
 
 ***Figure 11: Regression results from OLS Model***
 
-The OLS model has an Adjusted R-squared of 0.31, suggesting our factors only explain about 30% of the variation in number of overdoses. At the 5% level, independent variables with statistically significant coefficients were the number of arrests, the percent of Hispanic residents, the percent of the area zoned as high-density residential and the distance to public safety resources. All variables except the distance to public safety resources are positively correlated with number of overdoses. 
+The OLS model has an Adjusted R-squared of 0.31, suggesting our factors only explain about 30% of the variation in number of overdoses. At the 5% level, independent variables with statistically significant coefficients were the number of arrests, the percentage of Hispanic residents, the percentage of the area zoned as high-density residential and the distance to public safety resources. All variables except the distance to public safety resources are positively correlated with number of overdoses. 
 
-Below are the results of the Poisson regression. Using this model, in addition to the significant variables in the OLS regression, the percentage of Hispanic residents and percentage of Black residents and the distance to public greenspace were also significant at the 5% level. Particularly interesting results are that every 1-unit increase in the percentage of land zoned as high-density residential corresponds to a ~ 0.98% increase in overdose cases. Similarly every 1-unit increase in the percentage of black residents and hispanic residents corresponded to overdose case increases of 1.17% and 0.70% respectively.
-
-Unlike our hypotheses the farther away from public greenspace and public safety resources, the lower the overdose counts. While there are no grounds for causation, the reason for this phenomenon might be the fact that many of these public facilities are nearer to the city center and farther from suburban outskirts, so more overdoses may be happening in these areas.
+Figure 12 shows the results of the Poisson regression. Using this model, in addition to the significant variables in the OLS regression, the percentage of Hispanic residents and percentage of Black residents and the distance to public greenspace were also significant at the 5% level. Particularly interesting results are that every 1-unit increase in the percentage of land zoned as high-density residential corresponds to a ~ 0.98% increase in overdose cases. Similarly every 1-unit increase in the percentage of black residents and hispanic residents corresponded to overdose case increases of 1.17% and 0.70% respectively.
 
 ```{r message=FALSE, warning=FALSE}
 preg <- glm(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic + perc_owners +
@@ -678,18 +676,27 @@ preg <- glm(overdose_count ~ arrests_count + median_income + perc_black + perc_h
 summary(preg)
 ```
 
-The Moran’s correlation test was conducted to check for residual spatial dependence. Below are the results for the OLS model and the Poisson model respectively. 
+***Figure 12: Regression results from Poisson regression model***
+
+Unlike our hypotheses the farther away from public greenspace and public safety resources, the lower the overdose counts. While there are no grounds for causation, the reason for this phenomenon might be the fact that many of these public facilities are nearer to the city center and farther from suburban outskirts, so more overdoses may be happening in these areas.
+
+The Moran’s correlation test was conducted to check for residual spatial dependence. Below are the results for the OLS model and the Poisson model respectively (figures 13 and 14). 
 As seen below, the test resulted in a Moran’s I of 0.014 and 0.0068 respectively with corresponding Moran I statistics that were not significant on the 5% level. As a result, we cannot retain the null hypothesis that there is no spatial clustering of the residuals.
 
 
 ```{r message=FALSE, warning=FALSE}
 lm.morantest(reg, mesa_weights, zero.policy=TRUE)
 ```
+
+***Figure 13: Residual spatial dependance from OLS model***
+
 ```{r message=FALSE, warning=FALSE}
 lm.morantest(preg, mesa_weights, zero.policy=TRUE)
 ```
 
-Although we cannot reject the null hypothesis based of our Moran correlation test results, an examination of the residuals of the OLS model (below), shows that their distribution appear to be non-random with large positive residuals in the west and center of the city.  The poisson model has residual values of smaller magnitude which are more evenly spread out spatially. However, there still seems to be some clustering of positive residuals in the west and center of the city. For this reason, we proceed with spatial regression models.
+***Figure 14: Residual spatial dependance from Poisson regression model****
+
+Although we cannot reject the null hypothesis based of our Moran correlation test results, an examination of the residuals of the OLS model (figure 15), shows that their distribution appear to be non-random with large positive residuals in the west and center of the city.  The poisson model has residual values of smaller magnitude which are more evenly spread out spatially. However, there still seems to be some clustering of positive residuals in the west and center of the city. For this reason, we proceed with spatial regression models.
 
 
 ```{r fig.height=2.5, fig.width=6,results='hide', message=FALSE, warning=FALSE}
@@ -707,17 +714,19 @@ tm_fill(col = "res_m2", title = legend_title, palette = magma(256), style = "con
 tmap_arrange(map_mesa_res, map_mesa_res2)
 ```
 
-
+***Figure 15: Spatial distribution of residuals from OLS model (left) and Poisson regression model (right)***
 
 
 ## Spatial Lag Model
 ***By Humza Hussain***
 
+
 ### Methodology
+
 
 #### Reasoning for Spatial Modelling
 
-The residual values from the OLS regression were observed to see whether any significant autocorrelation existed in these values. In the map above, there do seem to be significant clusters of positive residuals to the west of the city. While this histogram of residuals shows that an approximately normally distribution on the most part (figure ?), outliers to the positive side of the spectrum lead to deviation at the right tail. This is further evidenced by deviation at the right tail of the QQ-plot (figure ?).
+The residual values from the OLS regression were observed to see whether any significant autocorrelation existed in these values. Figure 15 does show significant clusters of positive residuals to the west and centre of the city. While this histogram of residuals shows that an approximately normally distribution on the most part (figure 16), outliers to the positive side of the spectrum lead to deviation at the right tail. This is further evidenced by deviation at the right tail of the QQ-plot (figure 16).
 
 ```{r fig.height=3, fig.width=7,results='hide', message=FALSE, warning=FALSE}
 
@@ -731,7 +740,7 @@ qq <- ggplot(data=mesa_all, aes(sample=lm_res)) + geom_qq() + geom_qq_line() + l
 
 hist + qq
 ```
-***Figure ?***
+***Figure 16: Frequency distribution of residual values from OLS model, shown with histogram (left) and QQ-plot (right)***
 
 
 The results of the OLS model point to key assumptions of linear regression being violated, most notably the assumption that residuals are independent and not spatially autocorrelated. We attempt to integrate a spatial lag model as one of the spatial regression models to account for spatial autocorrelation in our data. 
@@ -741,14 +750,14 @@ The spatial lag model assumes that autocorrelation is present in the dependent v
 
 #### Spatial Lag Model
 
-The spatial lag model is defined as follows:
+The spatial lag model is defined as:
 
 $$
 Y = \rho Wy + X\beta + \epsilon
 $$
 Where $y$ is a vector of observations, $\rho$ is an autocorrelation parameter, $W$ is an $n*n$ spatial weight matrix  and $\epsilon$ is an $n*1$ vector of independent and identically distributed errors (iid). The spatial lag model follows the iid assumption, that being that the errors are normally distributed with a mean of 0 and a variance of $\sigma^2$.
 
-Before fitting a spatial lag model, it was assessed whether any of the independent variables required transformation prior to fitting a model. A Generalised Additive Model (GAM) was used to fit a smooth non-parametric function to the opioid overdoes variable using predictor variables (Zuur et al. 2007), and these results were tested against the distribution of independent variables to assess which transformations were appropriate. A spatial lag model was run with both predictor variables left untransformed and one with appropriate transformations to assess which model had the best fit. 
+Before fitting a spatial lag model, it was assessed whether any of the independent variables required transformation prior to fitting a model. A Generalised Additive Model (GAM) was used to fit a smooth non-parametric function to the opioid overdoes variable using predictor variables (Zuur et al. 2007), and these results were tested against the distribution of independent variables to assess which transformations were appropriate. A spatial lag model was run with both predictor variables left untransformed and one with appropriate transformations, to assess which model had the best fit. 
 
 ### Results
 
@@ -764,20 +773,20 @@ GAM <- gam(overdose_count ~ s(new_arrests_count) + s(median_income) + s(perc_bla
 summary(GAM)
 ```
 
-***Figure ?: Summary of GAM results***
+***Figure 17: Summary of GAM results***
 
-Above are the results from the GAM test on predictor variables (figure ?). Only 3 variables showed statistical significance to the 0.05% significance level, that being number of police incidents, percentage of land zoned as high-density residential and average distance to public safety. In the context of a GAM, coefficients of 1 for the effective degrees of freedom coefficient (edf) tend to correspond to smooth functions that are more flexible, a good indicator that the relationship between this predictor variable and the dependant is non-linear. With all three statistically significant variables having edf coefficients above 1, their distributions were analysed further to assess if transformations were appropriate. 
+Above are the results from the GAM test on predictor variables (figure 17). Only 3 variables showed statistical significance to the 0.05% significance level, that being number of arrests, percentage of land zoned as high-density residential and average distance to public safety. In the context of a GAM, coefficients of 1 for the effective degrees of freedom coefficient (edf) tend to correspond to smooth functions that are more flexible, a good indicator that the relationship between this predictor variable and the dependant is non-linear. With all three statistically significant variables having edf coefficients above 1, their distributions were analysed further to assess if transformations were appropriate. 
 
-While distance to public safety replicated an approximately normal distribution, both police incidents and percentage of land zoned as high-density residential showed distributions heavily skewed to the left. Therefore, a logarithmic transformation was only applied to police incidents and percentage of land zoned as high-density residential, with the results from this model summarised below (figure ?). 
+While distance to public safety replicated an approximately normal distribution, both police incidents and percentage of land zoned as high-density residential showed distributions heavily skewed to the left. Therefore, a logarithmic transformation was only applied to police incidents and percentage of land zoned as high-density residential, with the results from this model summarised below (figure 18). 
 
 ```{r  message=FALSE, warning=FALSE}
 logged.mesa.lag <- lagsarlm(overdose_count ~ log(new_arrests_count) + median_income + perc_black + perc_hispanic + perc_owners + log(new_resid_high_per) + commercial_per + dist_greenspace + dist_vacant_prop + dist_graffiti + dist_public_safety, data = mesa_all, listw = mesa.W)
 summary(logged.mesa.lag)
 ```
 
-Figure ?: Spatial Lag Model with Transformed Variables
+***Figure 18: Results from Spatial Lag model with transformed variables***
 
-A model was also run with all predictor variables left untransformed, with the results from this model shown below (figure ?).
+A model was also run with all predictor variables left untransformed, with the results from this model shown below (figure 19).
 
 ```{r results='hide', message=FALSE, warning=FALSE}
 mesa.lag <- lagsarlm(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic + perc_owners + resid_high_per + commercial_per + dist_greenspace + dist_vacant_prop + dist_graffiti + dist_public_safety, data = mesa_all, listw = mesa.W)
@@ -787,7 +796,7 @@ mesa.lag <- lagsarlm(overdose_count ~ arrests_count + median_income + perc_black
 summary(mesa.lag)
 ```
 
-Figure ?: Spatial Lag Model with Variables left in their natural form
+***Figure 19: Results from Spatial Lag model with variables left in their natural form***
 
 From a first glance, we can see that the model with non-transformed predictor variables has both a lower AIC coefficient (2181.2 vs 2204.4) and a higher log likelihood (-1.076.6 vs -1.088.2). These both indicate that the model with untransformed predictor variables fits our data much better, and further analysis focused on this model.
 
@@ -795,7 +804,7 @@ From the individual variables, only four variables showed statistical significan
 
 The p-value from the rho autocorrelation parameter of 0.448 is a strong indicator that the additionality of $\rho$ does not significantly improve the model fit. Furthermore, the p-value of the Wald test of 0.442 indicates that there is insufficient evidence to reject the null hypothesis that the parameters of the spatial lag variable are equal to zero.
 
-The residuals from this spatial lag model further prove that the spatial lag model did a poor job in accounting for the observed spatial autocorrelation across Mesa, given their almost identical nature to residuals from the linear OLS regression model. These can be seen bellow in the map (figure ?), histogram (figure ?) and QQ-plot (figure ?) of the spatial lag model residuals.
+The residuals from this spatial lag model further prove that the spatial lag model did a poor job in accounting for the observed spatial autocorrelation across Mesa, given their almost identical nature to residuals from the linear OLS regression model. These can be seen bellow in the map, histogram and QQ-plot of the spatial lag model residuals (figure 20).
 
 ```{r fig.height=4, fig.width=9, results='hide', message=FALSE, warning=FALSE}
 mesa_all$log_res  <- residuals(mesa.lag)
@@ -813,23 +822,21 @@ map + hist + qq
 
 ```
 
-***Figure ?: Spatial Lag Model Residuals***
-***Panel A: Spatial Distribution of Residuals,***
-***Panel B: Frequency Distribution of Residuals,***
-***Panel C: QQ Plot***
+***Figure 20: Spatial Lag Model Residuals***
+***Panel A: Spatial distribution of residuals,***
+***Panel B: Frequency distribution of residuals,***
+***Panel C: QQ-plot***
 
-All in all, these observations indicate that there is insufficient evidence to reject the null hypothesis. Therefore, we cannot say with confidence that the dependent variable (opioid overdoses) is correlated with the same variable at nearby locations. Different spatial regression models may better explain the spatial autocorrelation observed from the exploratory spatial data analysis.
-
-
-
+All in all, these observations indicate that there is insufficient evidence to reject the null hypothesis. Therefore, we cannot say with confidence that the dependent variable (opioid overdoses) is correlated with the same variable at nearby locations. Different spatial regression models may better explain the spatial autocorrelation observed from the exploratory spatial data analysis. 
 
 
 ## Spatial Error Model
 ***By Yiru Xu***
 
+
 ### Methodology
 
-The spatial error model assumes autocorrelation is a result of some unobserved variable(s) and is present in the residuals of the model, which means that it assume that only the error terms in the regression are correlated. The basic form of the model is as follows:
+The spatial error model assumes autocorrelation is a result of some unobserved variable(s) and is present in the residuals of the model, which means that it assumes that only the error terms in the regression are correlated. The basic form of the model is as follows:
 
 $y = X\beta+\epsilon$
 
@@ -839,13 +846,10 @@ Therefore, the final spatial error model can be specified as:
 
 $y = X \beta + \lambda W \epsilon + \xi$
 
-Same to the OLS model, $y$ is an $n *1$ vector of independent variable;$X$ is an $n *m$ matrix of independent variables; $\beta$ is an $m *1$ vector of parameters to be estimated.
-In the OLS regression we estimate a single error term, $\epsilon$. While in a spatial error model, we split this error into random error and spatially structured error. Here, random error (unexplained by our model) is $\xi$, independent identically distributed (i.i.d.) errors. Spatially structured error is composed of the the spatial error parameter $\lambda$, and the original $\epsilon$ error term is now weighted by the weight matrix $W$. If $\lambda = 0$, there is no spatial correlation between the errors. If $\lambda \not = 0$, OLS is unbiased and consistent, but the standard errors will be wrong and the betas will be inefficient(Emily Burchfield, 2020).
+Similarly to the OLS model, $y$ is an $n *1$ vector of independent variable;$X$ is an $n *m$ matrix of independent variables; $\beta$ is an $m *1$ vector of parameters to be estimated.
+In the OLS regression we estimate a single error term, $\epsilon$. While in a spatial error model, we split this error into both random error and spatially structured error. Here, random error (unexplained by our model) is $\xi$, independent identically distributed (i.i.d.) errors. Spatially structured error is composed of the the spatial error parameter $\lambda$, and the original $\epsilon$ error term is now weighted by the weight matrix $W$. If $\lambda = 0$, there is no spatial correlation between the errors. If $\lambda \not = 0$, OLS is unbiased and consistent, but the standard errors will be wrong and the betas will be inefficient(Emily Burchfield, 2020).
 
-
-### Results
-
-The results of the Spatial Error Model are below.
+The results of the Spatial Error Model are shown below (figure 21).
 
 ```{r message=FALSE, warning=FALSE}
 mesa.W <- nb2listw(poly2nb(mesa_all))
@@ -853,17 +857,17 @@ mesa.err <- errorsarlm(overdose_count ~ arrests_count + median_income + perc_bla
 summary(mesa.err)
 ```
 
-As is shown in the result, at the 5% significance level, four independent variables show significant correlation with our dependent variable, which is the number of overdose cases. The four factors are the number of arrest, the percent of Hispanic residents, the percent of the area zoned as high-density residential and the distance to public safety resources. Except for the distance to public safety resources, which is negatively correlated with the numbers of overdoses cases, other three factors all show positive correlation with the dependent variable. To quantitatively illustrate the correlation, for example, every one-unit increase in the percent of Hispanic residents corresponds to a 0.05% increase in overdose cases, and every one-unit longer distance to public safety resources corresponds to a 0.0003% decrease in overdoses case. While the influence of these indenpendet variables are rather weak as their coefficients are significantly low, compared to the other two influential factors , the percent of the area zoned as high-density residential and the percent of Hispanic resident still have much higher coefficients, which means they have stronger impact on the number of over dose cases. This result is consistent with the OLS model and the spatial lag model. It also affirms most of our hypotheses that census blocks with greater minority population and higher crime rates would have more overdose cases. Discussion of the results that fail to coincide with our hypotheses was presented in the OLS model part and it is also applied in the spatial error model.
+***Figure 21: Results from Spatial Error model***
 
-Looking at the model fitting effect, the autocorrelation parameter $\lambda$ didn't pass the LM test, which tests
-whether the addition of $\lambda$ significantly improves the model fit. In this case, the p-value is not significant at the 5% level so we can't conclude that the autocorrelation parameter significantly improves the model fit.
-The large negative log likelihood value also indicators a failure of better fit of the regression model. Furthermore, the 0.65 p-value of Wald statistic shows that we have no sufficient evidence to reject the null hypothesis that the parameters of the spatial error model are equal to zero. This suggests that the independent variables we are using to account for the dependent variable in this model didn't produce a good fitting effect, which is consistent with the of results of aforementioned indices.
+As is shown in the result, at the 5% significance level, four independent variables show significant correlation with opioid overdose cases. The four factors are the number of arrests, the percent of Hispanic residents, the percentage of the area zoned as high-density residential and the average distance to public safety resources. Except for the distance to public safety resources, which is negatively correlated with the numbers of overdoses cases, the other three factors all show positive correlation with the dependent variable. To quantitatively illustrate the correlation, every one-unit increase in the percent of Hispanic residents corresponds to a 0.05% increase in overdose cases, and every one-unit longer distance to public safety resources corresponds to a 0.0003% decrease in overdoses case. While the influence of these independant variables are rather weak as their coefficients are significantly low compared to the other two influential factors, the percentage of the area zoned as high-density residential and the percentage of Hispanic residents still have much higher coefficients, which means they have stronger impact on the number of over dose cases. This result is consistent with the OLS model and the spatial lag model. It also affirms most of our hypotheses that census blocks with greater minority population and higher crime rates would have more overdose cases. Discussion of the results that fail to coincide with our hypotheses was presented in the OLS model and it is also applied in the spatial error model. 
 
-Normally, a larger log-likelihood and a larger negative AIC indicate better model fits. However, as we compare these two indices between spatial lag model and spatial error model, we find that they basically have the same poor result, which means neither of the models have better model fits.
+Looking at the model fitting effect, the autocorrelation parameter $\lambda$ didn't pass the LM test, which tests whether the addition of $\lambda$ significantly improves the model fit. In this case, the p-value is not significant at the 5% level so we cannot conclude that the autocorrelation parameter significantly improves the model fit. The large negative log likelihood value also indicators a failure of better fit of the regression model. Furthermore, the 0.65 p-value of the Wald statistic shows that we have insufficient evidence to reject the null hypothesis that the parameters of the spatial error model are equal to zero. This suggests that the independent variables we are using to account for the dependent variable in this model didn't produce a good fitting effect, which is consistent with the results of aforementioned indices.
 
-While we visualise the spatial distribution of residuals (figure?) of the error model, we still see that some level of spatial autocorrelation from the western to the central Mesa city. It suggests that the spatial error model didn't fully account for the spatial dependence in our case.
+Normally, a larger log-likelihood and a larger negative AIC indicate better model fits. However, as we compare these two indices between spatial lag model and spatial error model, we find that they essentially have the same poor result, which means neither of the models have better model fits.
 
-Furthermore, as we compare the map(figure?), histogram (figure?) and QQ-plot(figure?) with OLS and spatial lag models, it is obvious to see that they are basically identical among these three models. It is another suggestion that the spatial error model poorly accounted for the variance that couldn't be explained in the previous OLS and spatial models, which means the spatial error model is still not a proper option for our regression.
+While we visualise the spatial distribution of residuals (figure 22) of the error model, we still see that some level of spatial autocorrelation in the west and centre of Mesa. It suggests that the spatial error model didn't fully account for the spatial dependence in our data.
+
+Furthermore, as we compare the map, histogram and QQ-plot with OLS and spatial lag models (figure 22), it is obvious to see that they are essentially identical among these three models. It is another suggestion that the spatial error model poorly accounted for the variance that couldn't be explained in the previous OLS and spatial models, which means the spatial error model is still not a suitable method to answer our research question.
 
 ```{r fig.height=4, fig.width=9, results='hide', message=FALSE, warning=FALSE}
 mesa_all <- mesa_dataset[all_vars]
@@ -883,13 +887,12 @@ map + hist + qq
 
 ```
 
-***Figure ?: Spatial Error Model Residuals***
-***Panel A: Spatial Distribution of Residuals,***
-***Panel B: Frequency Distribution of Residuals,***
-***Panel C: QQ Plot***
+***Figure 22: Spatial Error model residuals***
+***Panel A: Spatial distribution of residuals,***
+***Panel B: Frequency distribution of residuals,***
+***Panel C: QQ-plot***
 
-Thus, at this part, we can conclude that the spatial error model is unable to make significant improvement to the OLS model and spatial lag models. A better regression model should be applied, or more appropriate variables should be added into the model to make better fitting effect.
-
+Thus, at this part, we can conclude that the spatial error model is unable to make significant improvements on the OLS model and spatial lag models. A better regression model should be applied, or more appropriate variables should be added to the model to achieve a better fitting effect.
 
 
 ## Spatial Durbin Watson Model
