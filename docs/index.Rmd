@@ -62,6 +62,7 @@ options(scipen=999)
 
 # **Introduction**
 
+
 ## Context
 
 The Opioid epidemic is a global health crisis (Krausz et al., 2021). The effectiveness of this drug class in pain treatment, modern anaesthesia and palliative care (Rosenblum et al., 2008, Rosner et al., 2019) is widely regarded in the medical world. In the United States, there was widespread over-prescription of opioids such as OxyContin during the 1990s (Lyden and Binswanger, 2019). This led to increased dependency on the drug due to it's highly addictive nature (Waldhoer et al. 2004), and people began to turn to illegal synthetic opioids when prescriptions began to stop. Among the many side effects of opioid usage, such as digestive disorders, constipation and depression (Adams, 1889), the most notable is respiratory depression, which is the main cause of opioid overdose related deaths (Montandon and Slutsky, 2019). Hospitalisations related to this drug increased 64% between 2005 and 2014, and in 2016 over 42,000 Americans died from opioid overdoses (Lyden and Binswanger, 2019). Governments on the local and national levels of the country are actively pursuing solutions to mitigate the risks that this crisis poses to society.
@@ -78,6 +79,7 @@ Adding to the previous work in this field, we aim to spatially characterise the 
 The objective of our research is to improve the targeting of interventions against heroin overdoses in Mesa. We aim to identify how demographic, socioeconomic, and geographic factors are associated with overdose deaths in order to inform the City about where to take proactive measures to prevent more incidences. To achieve this, we model the relationship between various potential risk factors and the number of overdoses using spatial regression.
 
 We hypothesize that there will be higher overdose mortality in areas with greater minority and low-income populations. Our predictions are based on studies showing that heroin-related incidents were negatively correlated with median household income in Cincinnati (Li et al., 2019) and that incidents were growing most rapidly amongst Black and Latina communities across US metropolitan areas (Lippold et al., 2019). We also predict that characteristics of the built environment such as distance from greenspace, zoning assignments, or indications of plight will influence opioid cases, based on the aforementioned study (Li et al., 2019). Finally, we expect a lower number of incidents with regions of lower crime rates in accordance to results in similar work (Choi et al., 2022). 
+
 
 # **Data**
 
@@ -630,6 +632,7 @@ mesa_all <- mesa_dataset[all_vars]
 ## OLS and Poisson Baseline Models 
 ***By Ayina Anyachebelu***
 
+
 ### Methodology
 
 We first build our baseline models using Ordinary Least Squares and Poisson Regression. 
@@ -650,7 +653,8 @@ where $x_1$ = 1 so $\beta_1$ represents our constant term and for any values of 
 
 ### Results
 
-Below are the results of the OLS Model. 
+Below are the results of the OLS Model (Figure 11). 
+
 ```{r message=FALSE, warning=FALSE}
 reg <- lm(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic + perc_owners +
           resid_high_per + commercial_per + dist_greenspace + dist_vacant_prop + dist_graffiti + 
@@ -658,6 +662,8 @@ reg <- lm(overdose_count ~ arrests_count + median_income + perc_black + perc_his
           data = mesa_all)
 summary(reg)
 ```
+
+***Figure 11: Regression results from OLS Model***
 
 The OLS model has an Adjusted R-squared of 0.31, suggesting our factors only explain about 30% of the variation in number of overdoses. At the 5% level, independent variables with statistically significant coefficients were the number of arrests, the percent of Hispanic residents, the percent of the area zoned as high-density residential and the distance to public safety resources. All variables except the distance to public safety resources are positively correlated with number of overdoses. 
 
