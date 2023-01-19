@@ -317,7 +317,7 @@ mesa_cb_final$arrests_count[is.na(mesa_cb_final$arrests_count)] <- 0
 
 ## United States Census Bureau Data
 
-We obtained all our demographic and socioeconomic data from the [American Community Survey (ACS)](https://www.census.gov/programs-surveys/acs) which is an annual data collection program run by the United States Census Bureau (United States Census Bureau 2022). ACS is the premier source for detailed demographic and housing information in the United States. We obtained the most recent 5-year estimates (2020) on the census block group level which is the smallest geographical unit for which the Census Bureau provides data. There are 345 census block groups in Mesa with a substantial population. The information we collected includes the total population, the white, Black, and Hispanic population, the median household income, the total unemployed and the total labor force, the number of homeowners, the number of renters, the number of vacant properties, and the total number of properties. For all our main variables excluding income, we calculated the statistic as a proportion to account for varying population sizes across the census block groups. 
+We obtained all our demographic and socioeconomic data from the [American Community Survey (ACS)](https://www.census.gov/programs-surveys/acs) which is an annual data collection program run by the United States Census Bureau (United States Census Bureau 2022). ACS is the premier source for detailed demographic and housing information in the United States. We obtained the most recent 5-year estimates (2020) on the census block group level which is the smallest geographical unit for which the Census Bureau provides data. There are 345 census block groups in Mesa with a substantial population. The information we collected includes the total population, the white, Black, and Hispanic population, the median household income, the total unemployed and the total labor force, the number of homeowners, the number of renters, the number of vacant properties, and the total number of properties. For our main variables excluding income, we calculated the statistic as a proportion to account for varying population sizes across the census block groups. 
 
 
 ## City of Mesa Open Data
@@ -540,7 +540,7 @@ do.call(grid.arrange,c(mapList, ncol = 5, top = "Spatial Distribution of Indepen
 
 ```
 
-***Figure 7: Spatial distribution of potential independant variables
+***Figure 7: Spatial distribution of potential independent variables
 
 Our results show that there are several trends associated with the western part of the city. In this part of the city, we find the most extreme number of arrests, the largest proportions of Hispanic residents and lowest proportions of White residents, as well as the lowest proportions of homeowners. In general, we find that most of the city is zoned for low-density residential housing, while most of the commercial and high-density residential zoning is in the northwest or across the central, downtown part of the city. Most of the census block groups with large amounts of areas zoned as vacant land are in the eastern part of Mesa. On the other hand, most of the city-owned vacant properties (no inhabitants) are closer to the west of the city. We find that the average distance to greenspace, public safety facilities and graffiti are generally similar across the cities, except in the northeast and southeast of the city which are also the areas of the highest incomes. Distance to community development resources increases as we move to the west of the city. This is expected given that the downtown area is near the east. Finally, we find an extreme outlier in one census block group in the center of the city with close to a 100% unemployment rate, which we will remove from our data set. 
 
@@ -562,7 +562,7 @@ ggplot(data_long, aes(x = value)) + geom_histogram() + theme(axis.text.x = eleme
 
 ```
 
-***Figure 8: Frequency distributions of potential independant varaibles***
+***Figure 8: Frequency distributions of potential independent variables***
 
 
 ### Correlations Between Potential Risk Factors
@@ -576,7 +576,7 @@ cormat <- round(cor(mesa_nogeo),2)
 ggcorrplot(cormat)
 ```
 
-***Figure 9: Correlations between independant variables
+***Figure 9: Correlations between independent variables
 
 
 ### Correlations Between Overdose Counts and Potential Risk Factors
@@ -612,7 +612,7 @@ ggplot(mesa_corr, aes(Value, overdose_count)) +
 
 ```
 
-***Figure 10: Relationships between opioid overdoses and potential independant variables***
+***Figure 10: Relationships between opioid overdoses and potential independent variables***
 
 
 # **Modelling**
@@ -693,13 +693,13 @@ As seen below, the test resulted in a Moran’s I of 0.014 and 0.0068 respective
 lm.morantest(reg, mesa_weights, zero.policy=TRUE)
 ```
 
-***Figure 13: Residual spatial dependance from OLS model***
+***Figure 13: Residual spatial dependence from OLS model***
 
 ```{r message=FALSE, warning=FALSE}
 lm.morantest(preg, mesa_weights, zero.policy=TRUE)
 ```
 
-***Figure 14: Residual spatial dependance from Poisson regression model****
+***Figure 14: Residual spatial dependence from Poisson regression model****
 
 Although we cannot reject the null hypothesis based of our Moran correlation test results, an examination of the residuals of the OLS model (figure 15), shows that their distribution appear to be non-random with large positive residuals in the west and center of the city.  The poisson model has residual values of smaller magnitude which are more evenly spread out spatially. However, there still seems to be some clustering of positive residuals in the west and center of the city. For this reason, we proceed with spatial regression models.
 
@@ -750,7 +750,7 @@ hist + qq
 
 The results of the OLS model point to key assumptions of linear regression being violated, most notably the assumption that residuals are independent and not spatially autocorrelated. We attempt to integrate a spatial lag model as one of the spatial regression models to account for spatial autocorrelation in our data. 
 
-The spatial lag model assumes that autocorrelation is present in the dependent variable, that being opioid overdose cases. It assumes that the dependant variable is correlated with the same variable at nearby locations, above and beyond other covariates (Ward and Gleditsch 2008).
+The spatial lag model assumes that autocorrelation is present in the dependent variable, that being opioid overdose cases. It assumes that the dependent variable is correlated with the same variable at nearby locations, above and beyond other covariates (Ward and Gleditsch 2008).
 
 
 #### Spatial Lag Model
@@ -780,7 +780,7 @@ summary(GAM)
 
 ***Figure 17: Summary of GAM results***
 
-Above are the results from the GAM test on predictor variables (figure 17). Only 3 variables showed statistical significance to the 0.05% significance level, that being number of arrests, percentage of land zoned as high-density residential and average distance to public safety. In the context of a GAM, coefficients of 1 for the effective degrees of freedom coefficient (edf) tend to correspond to smooth functions that are more flexible, a good indicator that the relationship between this predictor variable and the dependant is non-linear. With all three statistically significant variables having edf coefficients above 1, their distributions were analysed further to assess if transformations were appropriate. 
+Above are the results from the GAM test on predictor variables (figure 17). Only 3 variables showed statistical significance to the 0.05% significance level, that being number of arrests, percentage of land zoned as high-density residential and average distance to public safety. In the context of a GAM, coefficients of 1 for the effective degrees of freedom coefficient (edf) tend to correspond to smooth functions that are more flexible, a good indicator that the relationship between this predictor variable and the dependent is non-linear. With all three statistically significant variables having edf coefficients above 1, their distributions were analysed further to assess if transformations were appropriate. 
 
 While distance to public safety replicated an approximately normal distribution, both police incidents and percentage of land zoned as high-density residential showed distributions heavily skewed to the left. Therefore, a logarithmic transformation was only applied to police incidents and percentage of land zoned as high-density residential, with the results from this model summarised below (figure 18). 
 
@@ -864,7 +864,7 @@ summary(mesa.err)
 
 ***Figure 21: Results from Spatial Error model***
 
-As is shown in the result, at the 5% significance level, four independent variables show significant correlation with opioid overdose cases. The four factors are the number of arrests, the percent of Hispanic residents, the percentage of the area zoned as high-density residential and the average distance to public safety resources. Except for the distance to public safety resources, which is negatively correlated with the numbers of overdoses cases, the other three factors all show positive correlation with the dependent variable. To quantitatively illustrate the correlation, every one-unit increase in the percent of Hispanic residents corresponds to a 0.05% increase in overdose cases, and every one-unit longer distance to public safety resources corresponds to a 0.0003% decrease in overdoses case. While the influence of these independant variables are rather weak as their coefficients are significantly low compared to the other two influential factors, the percentage of the area zoned as high-density residential and the percentage of Hispanic residents still have much higher coefficients, which means they have stronger impact on the number of over dose cases. This result is consistent with the OLS model and the spatial lag model. It also affirms most of our hypotheses that census blocks with greater minority population and higher crime rates would have more overdose cases. Discussion of the results that fail to coincide with our hypotheses was presented in the OLS model and it is also applied in the spatial error model. 
+As is shown in the result, at the 5% significance level, four independent variables show significant correlation with opioid overdose cases. The four factors are the number of arrests, the percent of Hispanic residents, the percentage of the area zoned as high-density residential and the average distance to public safety resources. Except for the distance to public safety resources, which is negatively correlated with the numbers of overdoses cases, the other three factors all show positive correlation with the dependent variable. To quantitatively illustrate the correlation, every one-unit increase in the percent of Hispanic residents corresponds to a 0.05% increase in overdose cases, and every one-unit longer distance to public safety resources corresponds to a 0.0003% decrease in overdoses case. While the influence of these independent variables are rather weak as their coefficients are significantly low compared to the other two influential factors, the percentage of the area zoned as high-density residential and the percentage of Hispanic residents still have much higher coefficients, which means they have stronger impact on the number of over dose cases. This result is consistent with the OLS model and the spatial lag model. It also affirms most of our hypotheses that census blocks with greater minority population and higher crime rates would have more overdose cases. Discussion of the results that fail to coincide with our hypotheses was presented in the OLS model and it is also applied in the spatial error model. 
 
 Looking at the model fitting effect, the autocorrelation parameter $\lambda$ didn't pass the LM test, which tests whether the addition of $\lambda$ significantly improves the model fit. In this case, the p-value is not significant at the 5% level so we cannot conclude that the autocorrelation parameter significantly improves the model fit. The large negative log likelihood value also indicators a failure of better fit of the regression model. Furthermore, the 0.65 p-value of the Wald statistic shows that we have insufficient evidence to reject the null hypothesis that the parameters of the spatial error model are equal to zero. This suggests that the independent variables we are using to account for the dependent variable in this model didn't produce a good fitting effect, which is consistent with the results of aforementioned indices.
 
@@ -1000,7 +1000,8 @@ We first obtain the centroid points and their coordinates for all district polyg
 The results of the Geographically Weighted Regression are shown below (figure 25). 
 
 ```{r message=FALSE, warning=FALSE}
-gwrG <- gwr(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic + perc_owners + resid_high_per + commercial_per + dist_greenspace + dist_vacant_prop + dist_graffiti + dist_public_safety, data = mesa_a, , coords = cbind(mesa_a$long, mesa_a$lat), bandwidth = bwG, gweight = gwr.Gauss, hatmatrix = TRUE, longlat=FALSE)
+gwrG <- gwr(overdose_count ~ arrests_count + median_income + perc_black + perc_hispanic + perc_owners + resid_high_per + commercial_per + dist_greenspace + dist_vacant_prop + dist_graffiti + dist_public_safety, data = mesa_a, coords = cbind(mesa_a$long, mesa_a$lat), bandwidth = bwG, gweight = gwr.Gauss, hatmatrix = TRUE, longlat=FALSE)
+
 gwrG
 ```
 
