@@ -315,15 +315,15 @@ We obtained all our demographic and socioeconomic data from the [American Commun
 
 ## City of Mesa Open Data
 
-The majority of our data sets come from the The City of Mesa Data Portal maintained by the municipal government. Our primary dataset is the ["Fire and Medical Opioid Overdose Incidents"](https://data.mesaaz.gov/Fire-and-Medical/Fire-and-Medical-Opioid-Overdose-Incidents/qufy-tzv6), which contains all confirmed cases of opioid overdoses and their locations rounded to the 1/3 mile increments. The overdose was either confirmed by the patient or witness, an opioid found on scene, or a positive response to Narcan treatment (City of Mesa). We obtained the number of overdose incidents from 2018 to 2020 and aggregated them by census block group. 
+The majority of our data sets come from the The City of Mesa Data Portal maintained by the municipal government. Our primary dataset is the ["Fire and Medical Opioid Overdose Incidents"](https://data.mesaaz.gov/Fire-and-Medical/Fire-and-Medical-Opioid-Overdose-Incidents/qufy-tzv6), which contains all confirmed cases of opioid overdoses and their locations rounded to the 1/3 mile increments. The overdose was either confirmed by the patient or witness, an opioid found on scene, or a positive response to Narcan treatment (City of Mesa 2023). We obtained the number of overdose incidents from 2018 to 2020 and aggregated them by census block group. 
 
-We also collected the ["Zoning Districts"](https://data.mesaaz.gov/Zoning-Property/Zoning-Districts/qscf-6ebm) data from the portal. The dataset contains delineated geographic areas in the city and their land use assignments. We specifically extracted land parcels assigned as high-density residential, low-density residential, and commercial. Additionally, we utilized the ["City Owned Property"](https://data.mesaaz.gov/Engineering/City-Owned-Property/xms2-ya86) dataset which lists the properties owned or sold by the city and their locations. From this dataset we obtained point data on the location of parks and cemeteries (which we labelled as greenspace), libraries, arts centers, museums, crisis centers, and senior centers (which we labelled as community development resources), fire department and police stations (which we labelled as public safety), and municipal vacant property. 
+We also collected the ["Zoning Districts"](https://data.mesaaz.gov/Zoning-Property/Zoning-Districts/qscf-6ebm) data from the portal. The dataset contains delineated geographic areas in the city and their land use assignments (City of Mesa 2020). We specifically extracted land parcels assigned as high-density residential, low-density residential, and commercial. Additionally, we utilized the ["City Owned Property"](https://data.mesaaz.gov/Engineering/City-Owned-Property/xms2-ya86) dataset which lists the properties owned or sold by the city and their locations (City of Mesa 2022). From this dataset we obtained point data on the location of parks and cemeteries (which we labelled as greenspace), libraries, arts centers, museums, crisis centers, and senior centers (which we labelled as community development resources), fire department and police stations (which we labelled as public safety), and municipal vacant property. 
 
-To investigate the degree of plight in neighborhoods, we used the ["Transportation Graffiti"](https://data.mesaaz.gov/Transportation/Transportation-Graffiti/9spb-749m) dataset which includes graffiti reports in the city. We obtained reports from 2018 to 2020 and filtered them by the date and location in order to collect only distinct reports. 
+To investigate the degree of plight in neighborhoods, we used the ["Transportation Graffiti"](https://data.mesaaz.gov/Transportation/Transportation-Graffiti/9spb-749m) dataset, which includes graffiti reports in the city (City of Mesa 2023). We obtained reports from 2018 to 2020 and filtered them by the date and location in order to collect only distinct reports. 
 
 To establish a smoother relationship to factors of our point datasets across space, we calculated average nearest neighbor features. Adapting code from Ken Steif's Public Policy Analytics we calculated the distance from the centroid of each census block group to the 3 nearest factor points (Steif, 2021). 
 
-Finally, to investigate crime rates, we utilized the ["Police Incidents"](https://data.mesaaz.gov/Police/Police-Incidents/39rt-2rfj) dataset which includes incidents based on police reports and arrests and their locations rounded to the nearest hundred block. We excluded all non-crime-related incidents such as car collisions, medical emergencies, or animal-related issues. We also excluded crimes that were related to driving such as DUIs, or missing driver's license, or speeding, because of the uncertainty about if the location of the incident is associated with the individual charged. 
+Finally, to investigate crime rates, we utilized the ["Police Incidents"](https://data.mesaaz.gov/Police/Police-Incidents/39rt-2rfj) dataset, which includes incidents based on police reports and arrests and their locations rounded to the nearest hundred block (City of Mesa 2023). We excluded all non-crime-related incidents such as car collisions, medical emergencies, or animal-related issues. We also excluded crimes that were related to driving such as DUIs, missing driver's license or speeding, because of the uncertainty about if the location of the incident is associated with the individual charged. 
 
 
 ## List of Potential Risk Factors
@@ -1333,7 +1333,17 @@ Brinkley-Rubinstein L., A. Macmadu, B. D. L. Marshall, A. Heise, S. I. Ranapurwa
 
 Burns J. M., R. F. Martyres, D. Clode and J. M. Boldero (2004) “Overdose in young people using heroin: Associations with mental health, prescription drug use and personal circumstances”, Medical Journal of Australia, 128, 7, 25-28.
 
-Choi J. I., Lee J, Yeh A. B., Lan Q and Kang H, (2022) “Spatial clustering of heroin-related overdose incidents: a case study in Cincinnati, Ohio”, BMC Public Health, 22, 1253. https://doi.org/10.1186/s12889-022-13557-3
+City of Mesa (2020) Zoning Districts, Available from: https://data.mesaaz.gov/Zoning-Property/Zoning-Districts/qscf-6ebm
+
+City of Mesa (2022) City Owned Property, Available from: https://data.mesaaz.gov/Engineering/City-Owned-Property/xms2-ya86
+
+City of Mesa (2023) Fire and Medical Opioid Overdose Incidents, Available from: https://data.mesaaz.gov/Fire-and-Medical/Fire-and-Medical-Opioid-Overdose-Incidents/qufy-tzv6
+
+City of Mesa (2023) Police Incidents, Available from: https://data.mesaaz.gov/Police/Police-Incidents/39rt-2rfj
+
+City of Mesa (2023) Transportation Graffiti, Available from: https://data.mesaaz.gov/Transportation/Transportation-Graffiti/9spb-749m
+
+Choi J. I., Lee J, Yeh A. B., Lan Q and Kang H, (2022) “Spatial clustering of heroin-related overdose incidents: a case study in Cincinnati, Ohio”, BMC Public Health, 22, 1253, Available from: https://doi.org/10.1186/s12889-022-13557-3
 
 Draanen J. V., C. Tsang, S. Mitra, M. Karamouzian, and L. Richardson (2020), “Socioeconomic marginalisation and opioid-related overdose: A systematic review”, Drug and Alcohol Dependence, 214 (2020), 108-127.
 
@@ -1351,7 +1361,7 @@ Kosten T. R. and T. P. George (2002) “The neurobiology of opioid dependence: I
 
 Krausz R. M., J. N. Westenberg and K. Ziafat (2021) “The opioid overdose crisis as a global health challenge”, Current Opinion in Psychiatry, 34, 4, 405-412.
 
-Lee Hyeyoung, Ghosh Sujit K. (2009) "Performance of information criteria for spatial models", Journal of Statistical Computation and Simulation, 79, 1, 93-106
+Lee Hyeyoung, Ghosh Sujit K. (2009) "Performance of information criteria for spatial models", Journal of Statistical Computation and Simulation, 79, 1, 93-106.
 
 Lippold K. M., Jones C. M., Olsen E. O. and Giroir B. P. (2019) “Racial/Ethnic and Age Group Differences in Opioid and Synthetic Opioid-Involved Overdose Deaths Among Adults Aged ≥18 Years in Metropolitan Areas - United States, 2015-2017”,  MMWR Morb Mortal Wkly Rep,  68, 4, 967-73. doi: 10.15585/mmwr.mm6843a3. 
 
