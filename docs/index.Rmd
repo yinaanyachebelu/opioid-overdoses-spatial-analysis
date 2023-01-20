@@ -15,6 +15,9 @@ output:
   pdf_document:
     toc: yes
     toc_depth: '4'
+  word_document:
+    toc: yes
+    toc_depth: '4'
 ---
 
 ```{r setup, results='hide', message=FALSE, warning=FALSE, include=TRUE}
@@ -63,7 +66,6 @@ library(r2symbols)
 options(scipen=999)
 ```
 
-Word Count: 7192
 
 # **Introduction**
 
@@ -330,7 +332,7 @@ To investigate the degree of plight in neighborhoods, we used the ["Transportati
 
 To establish a smoother relationship to factors of our point datasets across space, we calculated average nearest neighbor features. Adapting code from Ken Steif's Public Policy Analytics we calculated the distance from the centroid of each census block group to the 3 nearest factor points (Steif, 2021). 
 
-Finally, to investigate crime rates, we utilized the ["Police Incidents"](https://data.mesaaz.gov/Police/Police-Incidents/39rt-2rfj) dataset, which includes incidents based on police reports and arrests and their locations rounded to the nearest hundred block (City of Mesa 2023). We excluded all non-crime-related incidents such as car collisions, medical emergencies, or animal-related issues. We also excluded crimes that were related to driving such as DUIs, missing driver's license or speeding, because of the uncertainty about if the location of the incident is associated with the individual charged. 
+Finally, to examine crime rates, we utilized the ["Police Incidents"](https://data.mesaaz.gov/Police/Police-Incidents/39rt-2rfj) dataset, which includes incidents based on police reports and arrests and their locations rounded to the nearest hundred block (City of Mesa 2023). We excluded all non-crime-related incidents such as car collisions, medical emergencies, or animal-related issues. We also excluded crimes that were related to driving such as DUIs, missing driver's license or speeding, because of the uncertainty about if the location of the incident is associated with the individual charged. 
 
 
 ## List of Potential Risk Factors
@@ -427,7 +429,7 @@ By observation, the census blocks with a more significant number of overdose cas
 
 Global Moran’s I was performed to check if autocorrelation of opioid overdoses exists globally (figure 4). We find that at the census block group level, counts of overdose incidents display significant positive autocorrelation.
 
-```{r global_auto, results='hide', message=FALSE, warning=FALSE}
+```{r global_auto,message=FALSE, warning=FALSE}
 
 mesa_nb <- poly2nb(mesa_dataset, queen=TRUE)
 
@@ -455,11 +457,11 @@ moran.plot(mesa_dataset$overdose_count, mesa_weights,
 
 ```
 
-***Figure 5: Moran scatterplot for opioid overdoses (2018 to 2020)
+***Figure 5: Moran scatterplot for opioid overdoses (2018 to 2020)***
 
 We map the various clusters to examine the spatial distribution of the autocorrelation. The result shows that in most of the city the autocorrelation is not significant. However, there is significant high-high autocorrelation in the west and center of the city. There is one case of low-low autocorrelation in the northeast of the city.
 
-***Figure 6: Local Moran's I clusters for opioid overdoses (2018 to 2020)***
+
 
 ```{r local_auto, fig.height = 3.5, fig.width=3.5, results='hide', message=FALSE, warning=FALSE}
 
@@ -492,6 +494,8 @@ mesa_dataset$Ii_cluster <- clusters$sig
 tm_shape(mesa_dataset) + tm_polygons(col="Ii_cluster", palette = "Set3", title = "Clusters") + tm_layout(title= 'Spatial Autocorrelation', fontface = 2)
 
 ```
+
+***Figure 6: Local Moran's I clusters for opioid overdoses (2018 to 2020)***
 
 
 ## Examining Independent Variables
@@ -540,7 +544,7 @@ do.call(grid.arrange,c(mapList, ncol = 5, top = "Spatial Distribution of Indepen
 
 ```
 
-***Figure 7: Spatial distribution of potential independent variables
+***Figure 7: Spatial distribution of potential independent variables***
 
 Our results show that there are several trends associated with the western part of the city. In this part of the city, we find the most extreme number of arrests, the largest proportions of Hispanic residents and lowest proportions of White residents, as well as the lowest proportions of homeowners. In general, we find that most of the city is zoned for low-density residential housing, while most of the commercial and high-density residential zoning is in the northwest or across the central, downtown part of the city. Most of the census block groups with large amounts of areas zoned as vacant land are in the eastern part of Mesa. On the other hand, most of the city-owned vacant properties (no inhabitants) are closer to the west of the city. We find that the average distance to greenspace, public safety facilities and graffiti are generally similar across the cities, except in the northeast and southeast of the city which are also the areas of the highest incomes. Distance to community development resources increases as we move to the west of the city. This is expected given that the downtown area is near the east. Finally, we find an extreme outlier in one census block group in the center of the city with close to a 100% unemployment rate, which we will remove from our data set. 
 
@@ -576,7 +580,7 @@ cormat <- round(cor(mesa_nogeo),2)
 ggcorrplot(cormat)
 ```
 
-***Figure 9: Correlations between independent variables
+***Figure 9: Correlations between independent variables***
 
 
 ### Correlations Between Overdose Counts and Potential Risk Factors
@@ -699,7 +703,7 @@ lm.morantest(reg, mesa_weights, zero.policy=TRUE)
 lm.morantest(preg, mesa_weights, zero.policy=TRUE)
 ```
 
-***Figure 14: Residual spatial dependence from Poisson regression model****
+***Figure 14: Residual spatial dependence from Poisson regression model***
 
 Although we cannot reject the null hypothesis based of our Moran correlation test results, an examination of the residuals of the OLS model (figure 15), shows that their distribution appear to be non-random with large positive residuals in the west and center of the city.  The poisson model has residual values of smaller magnitude which are more evenly spread out spatially. However, there still seems to be some clustering of positive residuals in the west and center of the city. For this reason, we proceed with spatial regression models.
 
@@ -745,6 +749,7 @@ qq <- ggplot(data=mesa_all, aes(sample=lm_res)) + geom_qq() + geom_qq_line() + l
 
 hist + qq
 ```
+
 ***Figure 16: Frequency distribution of residual values from OLS model, shown with histogram (left) and QQ-plot (right)***
 
 
@@ -827,9 +832,9 @@ map + hist + qq
 
 ```
 
-***Figure 20: Spatial Lag Model Residuals: ***
-***Panel A: Spatial distribution of residuals, ***
-***Panel B: Frequency distribution of residuals, ***
+***Figure 20: Spatial Lag Model Residuals:***
+***Panel A: Spatial distribution of residuals,***
+***Panel B: Frequency distribution of residuals,***
 ***Panel C: QQ-plot.***
 
 All in all, these observations indicate that there is insufficient evidence to reject the null hypothesis. Therefore, we cannot say with confidence that the dependent variable (opioid overdoses) is correlated with the same variable at nearby locations. Different spatial regression models may better explain the spatial autocorrelation observed from the exploratory spatial data analysis. 
@@ -892,9 +897,9 @@ map + hist + qq
 
 ```
 
-***Figure 22: Spatial Error model residuals: ***
-***Panel A: Spatial distribution of residuals, ***
-***Panel B: Frequency distribution of residuals, ***
+***Figure 22: Spatial Error model residuals:***
+***Panel A: Spatial distribution of residuals,***
+***Panel B: Frequency distribution of residuals,***
 ***Panel C: QQ-plot.***
 
 Thus, at this part, we can conclude that the spatial error model is unable to make significant improvements on the OLS model and spatial lag models. A better regression model should be applied, or more appropriate variables should be added to the model to achieve a better fitting effect.
@@ -949,9 +954,9 @@ map + hist + qq
 
 ```
 
-***Figure 24: Spatial Durbin model residuals: ***
-***Panel A: Spatial distribution of residuals, ***
-***Panel B: Frequency distribution of residuals, ***
+***Figure 24: Spatial Durbin model residuals:***
+***Panel A: Spatial distribution of residuals,***
+***Panel B: Frequency distribution of residuals,***
 ***Panel C: QQ-plot.***
 
 
@@ -1117,8 +1122,6 @@ For each kernel function, we also experiment with both a fixed kernel (which use
 ```{r results='hide', message=FALSE, warning=FALSE}
 
 maricopa_crs <- 'EPSG:2223'
-mesa_dataset<- st_read("../mesa_complete_data4.geojson")%>%st_transform(st_crs(maricopa_crs))
-
 mesa_dataset<- st_read("../mesa_complete_data4.geojson")%>%st_transform(st_crs(maricopa_crs))
 
 all_vars <- c("overdose_count", "arrests_count", "median_income", "perc_black", 
